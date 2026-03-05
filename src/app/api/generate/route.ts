@@ -37,19 +37,29 @@ export async function POST(request: NextRequest) {
     // If image URL provided, download it as a File
     if (mode === "image-text" && !image && imageUrl?.trim()) {
       try {
-        const imgRes = await fetch(imageUrl.trim());
+        const imgRes = await fetch(imageUrl.trim(), {
+          headers: { "Accept": "image/*" },
+          redirect: "follow",
+        });
         if (!imgRes.ok) {
           return NextResponse.json(
             { error: `Failed to fetch image from URL (${imgRes.status})` },
             { status: 400 }
           );
         }
+        const contentType = imgRes.headers.get("content-type") || "";
+        if (!contentType.startsWith("image/")) {
+          return NextResponse.json(
+            { error: "URL does not point to an image. Please use a direct image URL (ending in .png, .jpg, etc.), not a sharing page link." },
+            { status: 400 }
+          );
+        }
         const blob = await imgRes.blob();
-        const ext = blob.type.split("/")[1] || "png";
-        image = new File([blob], `image.${ext}`, { type: blob.type });
+        const ext = contentType.split("/")[1]?.split(";")[0] || "png";
+        image = new File([blob], `image.${ext}`, { type: contentType });
       } catch {
         return NextResponse.json(
-          { error: "Failed to fetch image from URL" },
+          { error: "Failed to fetch image from URL. Make sure it's a direct link to an image." },
           { status: 400 }
         );
       }

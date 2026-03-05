@@ -291,7 +291,13 @@ class OmniLottieService:
                 if not image_b64:
                     return {"error": "No image provided for image-text mode"}
                 img_data = base64.b64decode(image_b64)
-                tmp = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+                # Detect format from magic bytes, default to png
+                ext = ".png"
+                if img_data[:3] == b'\xff\xd8\xff':
+                    ext = ".jpg"
+                elif img_data[:4] == b'RIFF' and img_data[8:12] == b'WEBP':
+                    ext = ".webp"
+                tmp = tempfile.NamedTemporaryFile(suffix=ext, delete=False)
                 tmp.write(img_data)
                 tmp.close()
                 image_path = tmp.name
