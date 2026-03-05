@@ -11,6 +11,8 @@ import { NextRequest, NextResponse } from "next/server";
 const MODAL_URL =
   "https://nkjain92--omnilottie-omnilottieservice-generate.modal.run";
 const HF_SPACE = "OmniLottie/OmniLottie";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+const GEMINI_MODEL = "gemini-2.5-flash-lite";
 
 // Track when Modal GPU was last used (in-memory, resets on server restart)
 // Modal scaledown_window is 300s, so GPU stays warm ~5min after last request
@@ -91,10 +93,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // If image-text mode with image but no prompt, use Gemini to describe the image
+    let finalPrompt = prompt;
+    if (mode === "image-text" && image && !prompt?.trim()) {
+      const description = await describeImageWithGemini(image);
+      if (description) {
+        finalPrompt = description;
+      }
+    }
+
     if (backend === "modal") {
       return await generateViaModal(
         mode,
-        prompt,
+        finalPrompt,
         image,
         video,
         temperature,
@@ -105,7 +116,7 @@ export async function POST(request: NextRequest) {
     } else {
       return await generateViaHuggingFace(
         mode,
-        prompt,
+        finalPrompt,
         image,
         video,
         temperature,
@@ -131,6 +142,59 @@ export async function POST(request: NextRequest) {
       message = String(error);
     }
     return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+// --- Gemini image description ---
+
+async function describeImageWithGemini(image: File): Promise<string | null> {
+  if (!GEMINI_API_KEY) {
+    console.warn("GEMINI_API_KEY not set, skipping image description");
+    return null;
+  }
+
+  try {
+    const buffer = await image.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString("base64");
+    const mimeType = image.type || "image/png";
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: "Describe this image in one concise sentence for animating it as a Lottie vector animation. Focus on the key visual elements, their colors, shapes, and what motion or animation would suit them. Be specific and actionable. Example: 'A red heart shape that could pulse and grow with a beating animation' or 'A blue rocket with orange flames that could launch upward with a trail effect'.",
+                },
+                {
+                  inlineData: { mimeType, data: base64 },
+                },
+              ],
+            },
+          ],
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      console.error("Gemini API error:", response.status, await response.text());
+      return null;
+    }
+
+    const data = await response.json();
+    const text =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+    if (text) {
+      console.log("Gemini image description:", text);
+    }
+    return text;
+  } catch (error) {
+    console.error("Gemini description error:", error);
+    return null;
   }
 }
 
