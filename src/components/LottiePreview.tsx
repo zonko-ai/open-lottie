@@ -53,20 +53,20 @@ export default function LottiePreview({
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <span className="text-sm font-medium text-muted">Preview</span>
+        <span className="text-sm font-medium text-muted">预览</span>
         {animationData && (
           <div className="flex items-center gap-1">
             <button
               onClick={handlePlayPause}
               className="p-1.5 rounded-md hover:bg-surface-2 text-muted hover:text-foreground transition-colors"
-              title="Play/Pause"
+              title="播放/暂停"
             >
               <Play size={14} />
             </button>
             <button
               onClick={handleRestart}
               className="p-1.5 rounded-md hover:bg-surface-2 text-muted hover:text-foreground transition-colors"
-              title="Restart"
+              title="重新播放"
             >
               <RotateCcw size={14} />
             </button>
@@ -74,14 +74,14 @@ export default function LottiePreview({
             <button
               onClick={handleCopyJSON}
               className="p-1.5 rounded-md hover:bg-surface-2 text-muted hover:text-foreground transition-colors"
-              title="Copy JSON"
+              title="复制JSON"
             >
               <Code size={14} />
             </button>
             <button
               onClick={handleDownloadJSON}
               className="p-1.5 rounded-md hover:bg-surface-2 text-muted hover:text-foreground transition-colors"
-              title="Download .json"
+              title="下载JSON"
             >
               <Download size={14} />
             </button>
@@ -93,7 +93,7 @@ export default function LottiePreview({
         {isGenerating ? (
           <div className="flex flex-col items-center gap-4">
             <div className="w-12 h-12 rounded-full border-2 border-border border-t-accent animate-spin" />
-            <p className="text-sm text-muted">Generating animation...</p>
+            <p className="text-sm text-muted">生成动画中...</p>
           </div>
         ) : animationData ? (
           <div className="w-full max-w-[400px] aspect-square lottie-preview-container bg-surface rounded-lg overflow-hidden">
@@ -111,9 +111,9 @@ export default function LottiePreview({
               <Play size={24} className="text-muted ml-1" />
             </div>
             <div>
-              <p className="text-sm text-muted">No animation yet</p>
+              <p className="text-sm text-muted">暂无动画</p>
               <p className="text-xs text-muted/60 mt-1">
-                Choose a mode and generate
+                选择模式并生成动画
               </p>
             </div>
           </div>

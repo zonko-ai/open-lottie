@@ -43,7 +43,7 @@ export default function ParameterControls({
         className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-surface-2 transition-colors"
       >
         <span className="text-xs font-medium text-muted">
-          Generation Parameters
+          生成参数
         </span>
         {expanded ? (
           <ChevronUp size={14} className="text-muted" />
@@ -57,7 +57,7 @@ export default function ParameterControls({
           {/* Temperature */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-xs text-muted">Temperature</label>
+              <label className="text-xs text-muted">温度</label>
               <span className="text-xs font-mono text-foreground">
                 {params.temperature.toFixed(2)}
               </span>
@@ -74,8 +74,7 @@ export default function ParameterControls({
               className="w-full"
             />
             <p className="text-[10px] text-muted/60 mt-0.5">
-              Controls randomness. Higher = more creative, lower = more
-              deterministic.
+              控制随机性。值越高越有创意，值越低越确定。
             </p>
           </div>
 
@@ -97,7 +96,7 @@ export default function ParameterControls({
               className="w-full"
             />
             <p className="text-[10px] text-muted/60 mt-0.5">
-              Nucleus sampling threshold.
+              核采样阈值。
             </p>
           </div>
 
@@ -119,14 +118,14 @@ export default function ParameterControls({
               className="w-full"
             />
             <p className="text-[10px] text-muted/60 mt-0.5">
-              Limits token selection to top-k most probable.
+              限制令牌选择为概率最高的前k个。
             </p>
           </div>
 
           {/* Repetition Penalty */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-xs text-muted">Repetition Penalty</label>
+              <label className="text-xs text-muted">重复惩罚</label>
               <span className="text-xs font-mono text-foreground">
                 {params.repetition_penalty.toFixed(2)}
               </span>
@@ -143,7 +142,7 @@ export default function ParameterControls({
               className="w-full"
             />
             <p className="text-[10px] text-muted/60 mt-0.5">
-              Penalizes repeated tokens. 1.0 = no penalty.
+              惩罚重复的令牌。1.0表示无惩罚。
             </p>
           </div>
 
@@ -151,7 +150,7 @@ export default function ParameterControls({
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="text-xs text-muted">
-                Candidates (Best-of-N)
+                候选数量 (Best-of-N)
               </label>
               <span className="text-xs font-mono text-foreground">
                 {params.num_candidates}
@@ -169,15 +168,14 @@ export default function ParameterControls({
               className="w-full"
             />
             <p className="text-[10px] text-muted/60 mt-0.5">
-              Generate N candidates and select the best. Higher = better quality
-              but slower.
+              生成N个候选并选择最佳。值越高质量越好但速度越慢。
             </p>
           </div>
 
           {/* Max Token Length */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-xs text-muted">Max Token Length</label>
+              <label className="text-xs text-muted">最大令牌长度</label>
               <span className="text-xs font-mono text-foreground">
                 {params.maxlen}
               </span>
@@ -192,7 +190,7 @@ export default function ParameterControls({
               className="w-full"
             />
             <p className="text-[10px] text-muted/60 mt-0.5">
-              Maximum sequence length for the generated Lottie tokens.
+              生成Lottie令牌的最大序列长度。
             </p>
           </div>
 
@@ -201,7 +199,7 @@ export default function ParameterControls({
             onClick={() => onChange(DEFAULT_PARAMS)}
             className="text-xs text-accent hover:text-accent-hover transition-colors"
           >
-            Reset to defaults
+            重置为默认值
           </button>
         </div>
       )}

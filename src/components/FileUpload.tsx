@@ -99,13 +99,13 @@ export default function FileUpload({
           </div>
           <div className="text-center">
             <p className="text-xs text-foreground">
-              Drop {type} here or{" "}
-              <span className="text-accent">browse</span>
+              拖放{type === "image" ? "图片" : "视频"}到此处或{" "}
+              <span className="text-accent">点击浏览</span>
             </p>
             <p className="text-[10px] text-muted mt-0.5">
               {type === "image"
-                ? "PNG, JPG, WebP up to 10MB"
-                : "MP4, WebM up to 50MB"}
+                ? "PNG、JPG、WebP，最大10MB"
+                : "MP4、WebM，最大50MB"}
             </p>
           </div>
           <input

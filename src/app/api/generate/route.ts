@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 const MODAL_URL =
   "https://nkjain92--omnilottie-omnilottieservice-generate.modal.run";
 const HF_SPACE = "OmniLottie/OmniLottie";
+const LOCAL_URL = "http://localhost:7860";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const GEMINI_MODEL = "gemini-3.1-flash-lite-preview";
 
@@ -104,6 +105,17 @@ export async function POST(request: NextRequest) {
 
     if (backend === "modal") {
       return await generateViaModal(
+        mode,
+        finalPrompt,
+        image,
+        video,
+        temperature,
+        top_p,
+        top_k,
+        maxlen
+      );
+    } else if (backend === "local") {
+      return await generateViaLocal(
         mode,
         finalPrompt,
         image,
@@ -347,6 +359,161 @@ async function generateViaHuggingFace(
 
   return NextResponse.json(
     { error: "Failed to extract Lottie JSON from response" },
+    { status: 500 }
+  );
+}
+
+// --- Local backend ---
+
+async function generateViaLocal(
+  mode: string,
+  prompt: string | null,
+  image: File | null,
+  video: File | null,
+  temperature: number,
+  top_p: number,
+  top_k: number,
+  maxlen: number
+) {
+  const { Client } = await import("@gradio/client");
+  const client = await Client.connect(LOCAL_URL);
+
+  let result;
+
+  if (mode === "text") {
+    result = await client.predict("/process_text_to_lottie", {
+      text_prompt: prompt,
+      max_tokens: maxlen,
+      use_sampling: true,
+      temperature,
+      top_p,
+      top_k,
+    });
+  } else if (mode === "image-text") {
+    const imageBuffer = await image!.arrayBuffer();
+    const imageBlob = new Blob([imageBuffer], { type: image!.type });
+    result = await client.predict("/process_image_to_lottie", {
+      image_file: imageBlob,
+      text_description: prompt || "",
+      max_tokens: maxlen,
+      use_sampling: true,
+      temperature,
+      top_p,
+      top_k,
+    });
+  } else {
+    const videoBuffer = await video!.arrayBuffer();
+    const videoBlob = new Blob([videoBuffer], { type: video!.type });
+    result = await client.predict("/process_video_to_lottie", {
+      video: videoBlob,
+      max_tokens: maxlen,
+      use_sampling: true,
+      temperature,
+      top_p,
+      top_k,
+    });
+  }
+
+  console.log("=== Gradio Response ===");
+  console.log("result type:", typeof result);
+  console.log("result:", JSON.stringify(result).substring(0, 500));
+  console.log("result.data type:", typeof result?.data);
+  console.log("result.data:", result?.data);
+  
+  // Gradio 返回 { type: "data", data: [...] }
+  const gradioResult = result as unknown as { data: unknown[] };
+  const dataArray = gradioResult.data as unknown[];
+  console.log("dataArray type:", typeof dataArray);
+  console.log("dataArray:", dataArray);
+  
+  const iframeHtml = dataArray?.[0] as string | undefined;
+  const statusMsg = dataArray?.[1] as string | undefined;
+  const jsonFilePath = dataArray?.[2] as string | undefined;
+  
+  console.log("iframeHtml type:", typeof iframeHtml, "length:", iframeHtml?.length);
+  console.log("statusMsg:", statusMsg);
+  console.log("jsonFilePath:", jsonFilePath);
+
+  if (
+    statusMsg &&
+    (statusMsg.includes("Error") || statusMsg.includes("error"))
+  ) {
+    return NextResponse.json({ error: statusMsg }, { status: 500 });
+  }
+
+  // 方法1: 直接从 JSON 文件路径读取
+  if (jsonFilePath) {
+    try {
+      const fs = await import("fs");
+      const fileContent = fs.readFileSync(jsonFilePath, "utf-8");
+      const lottieJson = JSON.parse(fileContent);
+      console.log("✅ Successfully read from file path");
+      return NextResponse.json({ lottie_json: lottieJson });
+    } catch (e) {
+      console.log("Failed to read from file path:", e);
+    }
+  }
+
+  // 方法2: 从 iframe 中提取 HTML，再从 HTML 中提取 JSON
+  if (iframeHtml) {
+    // 从 <iframe src="data:text/html;base64,..."> 中提取 base64 内容
+    const iframeMatch = iframeHtml.match(/src="data:text\/html;base64,([A-Za-z0-9+/=]+)"/);
+    if (iframeMatch) {
+      const htmlStr = Buffer.from(iframeMatch[1], "base64").toString("utf-8");
+      
+      // 从 HTML 中提取 JSON.parse('...') 中的 JSON 数据
+      const parseStart = htmlStr.indexOf("JSON.parse('");
+      if (parseStart !== -1) {
+        const jsonStart = parseStart + "JSON.parse('".length;
+        // 找到结束位置 - 需要找到匹配的 }
+        let depth = 0;
+        let jsonEnd = jsonStart;
+        let inString = false;
+        let escape = false;
+        
+        for (let i = jsonStart; i < htmlStr.length; i++) {
+          const char = htmlStr[i];
+          
+          if (escape) {
+            escape = false;
+            continue;
+          }
+          
+          if (char === '\\') {
+            escape = true;
+            continue;
+          }
+          
+          if (char === '"' && !inString) {
+            inString = true;
+          } else if (char === '"' && inString) {
+            inString = false;
+          } else if (!inString) {
+            if (char === '{') depth++;
+            else if (char === '}') {
+              depth--;
+              if (depth === 0) {
+                jsonEnd = i + 1;
+                break;
+              }
+            }
+          }
+        }
+        
+        const jsonStr = htmlStr.substring(jsonStart, jsonEnd);
+        try {
+          const lottieJson = JSON.parse(jsonStr);
+          console.log("✅ Successfully extracted JSON from HTML");
+          return NextResponse.json({ lottie_json: lottieJson });
+        } catch (e) {
+          console.error("Failed to parse JSON from HTML:", e);
+        }
+      }
+    }
+  }
+
+  return NextResponse.json(
+    { error: "无法从响应中提取Lottie JSON" },
     { status: 500 }
   );
 }

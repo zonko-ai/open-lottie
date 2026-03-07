@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import { useTranslations, useLocale } from "next-intl";
 import { Type, ImagePlus, Video, Sparkles, Wand2, Zap, ZapOff, Clock, DollarSign, Link } from "lucide-react";
 import LottiePreview from "./LottiePreview";
 import FileUpload from "./FileUpload";
@@ -8,60 +9,23 @@ import ParameterControls, {
   GenerationParams,
   DEFAULT_PARAMS,
 } from "./ParameterControls";
+import LanguageSwitcher from "./LanguageSwitcher";
+import { locales, type Locale } from "@/i18n/config";
 
 type Mode = "text" | "image-text" | "video";
-type Backend = "modal" | "huggingface";
+type Backend = "modal" | "huggingface" | "local";
 type GpuStatus = "checking" | "active" | "inactive";
 
-const MODES: { id: Mode; label: string; icon: typeof Type; description: string }[] = [
-  {
-    id: "text",
-    label: "Text to Lottie",
-    icon: Type,
-    description: "Generate animations from text descriptions",
-  },
-  {
-    id: "image-text",
-    label: "Image + Text to Lottie",
-    icon: ImagePlus,
-    description: "Guide animation with a reference image and prompt",
-  },
-  {
-    id: "video",
-    label: "Video to Lottie",
-    icon: Video,
-    description: "Convert video content into vector animations",
-  },
-];
-
-const EXAMPLE_PROMPTS: Record<Mode, string[]> = {
-  text: [
-    "A red heart beating with a gentle pulse animation",
-    "A loading spinner with rotating dots that fade in and out",
-    "A rocket launching upward with trailing flames",
-    "A waving hand emoji with smooth back-and-forth motion",
-    "A sun rising over mountains with rays extending outward",
-  ],
-  "image-text": [
-    "Animate this icon with a bouncing motion",
-    "Add a spinning rotation to this shape",
-    "Make this character wave hello",
-    "Add a glowing pulse effect to this logo",
-  ],
-  video: [],
-};
-
-// Estimate complexity from max tokens parameter
 function getTimeEstimate(maxlen: number): string {
   if (maxlen <= 3000) return "~30-60s";
   if (maxlen <= 5556) return "~2-4 min";
   return "~5-10 min";
 }
 
-function getComplexityLabel(maxlen: number): string {
-  if (maxlen <= 3000) return "Simple";
-  if (maxlen <= 5556) return "Medium";
-  return "Complex";
+function getComplexityLabel(maxlen: number, t: (key: string) => string): string {
+  if (maxlen <= 3000) return t("complexity.simple");
+  if (maxlen <= 5556) return t("complexity.medium");
+  return t("complexity.complex");
 }
 
 function formatTimer(seconds: number): string {
@@ -71,8 +35,80 @@ function formatTimer(seconds: number): string {
 }
 
 export default function Playground() {
-  const [mode, setMode] = useState<Mode>("text");
-  const [prompt, setPrompt] = useState("");
+  const t = useTranslations();
+  const currentLocale = useLocale() as Locale;
+  
+  const MODES: { id: Mode; label: string; icon: typeof Type; description: string }[] = [
+    {
+      id: "text",
+      label: t("modes.text.label"),
+      icon: Type,
+      description: t("modes.text.description"),
+    },
+    {
+      id: "image-text",
+      label: t("modes.image-text.label"),
+      icon: ImagePlus,
+      description: t("modes.image-text.description"),
+    },
+    {
+      id: "video",
+      label: t("modes.video.label"),
+      icon: Video,
+      description: t("modes.video.description"),
+    },
+  ];
+
+  const EXAMPLE_PROMPTS: Record<Mode, string[]> = {
+    text: [
+      t("prompt.exampleText0"),
+      t("prompt.exampleText1"),
+      t("prompt.exampleText2"),
+      t("prompt.exampleText3"),
+      t("prompt.exampleText4"),
+    ],
+    "image-text": [
+      t("prompt.exampleImageText0"),
+      t("prompt.exampleImageText1"),
+      t("prompt.exampleImageText2"),
+      t("prompt.exampleImageText3"),
+    ],
+    video: [],
+  };
+
+  const handleLocaleChange = async (locale: Locale) => {
+    // 保存当前状态到 URL 参数
+    const url = new URL(window.location.href);
+    url.searchParams.set("mode", mode);
+    url.searchParams.set("backend", backend);
+    if (prompt) url.searchParams.set("prompt", prompt);
+    
+    await fetch("/api/locale", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ locale }),
+    });
+    
+    // 使用保存的 URL 刷新页面
+    window.location.href = url.toString();
+  };
+  
+  // 从 URL 参数恢复状态
+  const [mode, setMode] = useState<Mode>(() => {
+    if (typeof window !== "undefined") {
+      const urlMode = new URLSearchParams(window.location.search).get("mode");
+      if (urlMode === "text" || urlMode === "image-text" || urlMode === "video") {
+        return urlMode;
+      }
+    }
+    return "text";
+  });
+  const [prompt, setPrompt] = useState(() => {
+    if (typeof window !== "undefined") {
+      return new URLSearchParams(window.location.search).get("prompt") || "";
+    }
+    return "";
+  });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -80,7 +116,15 @@ export default function Playground() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [animationData, setAnimationData] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [backend, setBackend] = useState<Backend>("modal");
+  const [backend, setBackend] = useState<Backend>(() => {
+    if (typeof window !== "undefined") {
+      const urlBackend = new URLSearchParams(window.location.search).get("backend");
+      if (urlBackend === "modal" || urlBackend === "huggingface" || urlBackend === "local") {
+        return urlBackend;
+      }
+    }
+    return "local";
+  });
   const [gpuStatus, setGpuStatus] = useState<GpuStatus>("checking");
 
   // Timer
@@ -203,7 +247,7 @@ export default function Playground() {
 
   return (
     <div className="w-full max-w-6xl mx-auto">
-      {/* GPU Status + Backend selector */}
+      {/* GPU Status + Backend selector + Language */}
       <div className="flex items-center justify-between mb-4 px-1">
         <div className="flex items-center gap-3">
           {/* GPU status indicator */}
@@ -227,17 +271,17 @@ export default function Playground() {
                 }
               >
                 {gpuStatus === "active"
-                  ? "Active"
+                  ? t("status.running")
                   : gpuStatus === "checking"
-                  ? "Checking..."
-                  : "Standby"}
+                  ? t("status.checking")
+                  : t("status.inactive")}
               </span>
             </span>
           </div>
 
           {gpuStatus === "inactive" && backend === "modal" && (
             <span className="text-[10px] text-muted/60">
-              First request wakes GPU (~2 min cold start)
+              {t("status.firstRequest")}
             </span>
           )}
         </div>
@@ -252,7 +296,7 @@ export default function Playground() {
                 : "text-muted hover:text-foreground"
             }`}
           >
-            Modal GPU
+            {t("backend.modal")}
           </button>
           <button
             onClick={() => setBackend("huggingface")}
@@ -262,9 +306,22 @@ export default function Playground() {
                 : "text-muted hover:text-foreground"
             }`}
           >
-            HF Space (Free)
+            {t("backend.huggingface")}
+          </button>
+          <button
+            onClick={() => setBackend("local")}
+            className={`px-2.5 py-1 text-[10px] font-medium rounded-md transition-all ${
+              backend === "local"
+                ? "bg-surface-2 text-foreground"
+                : "text-muted hover:text-foreground"
+            }`}
+          >
+            {t("backend.local")}
           </button>
         </div>
+
+        {/* Language Switcher */}
+        <LanguageSwitcher currentLocale={currentLocale} onLocaleChange={handleLocaleChange} />
       </div>
 
       {/* Mode tabs */}
@@ -307,7 +364,7 @@ export default function Playground() {
             {mode === "image-text" && (
               <div className="space-y-2">
                 <label className="text-xs font-medium text-muted block">
-                  Reference Image
+                  {t("image.label")}
                 </label>
                 <FileUpload
                   accept="image/png,image/jpeg,image/webp"
@@ -321,7 +378,7 @@ export default function Playground() {
                 {!imageFile && (
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-px bg-border" />
-                    <span className="text-[10px] text-muted/50">OR</span>
+                    <span className="text-[10px] text-muted/50">{t("common.or")}</span>
                     <div className="flex-1 h-px bg-border" />
                   </div>
                 )}
@@ -332,7 +389,7 @@ export default function Playground() {
                       type="url"
                       value={imageUrl}
                       onChange={(e) => setImageUrl(e.target.value)}
-                      placeholder="Paste image URL..."
+                      placeholder={t("image.urlPlaceholder")}
                       className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs placeholder:text-muted/40 focus:outline-none focus:border-accent transition-colors"
                     />
                   </div>
@@ -344,7 +401,7 @@ export default function Playground() {
             {mode === "video" && (
               <div>
                 <label className="text-xs font-medium text-muted mb-2 block">
-                  Source Video
+                  {t("video.label")}
                 </label>
                 <FileUpload
                   accept="video/mp4,video/webm"
@@ -358,16 +415,17 @@ export default function Playground() {
             {/* Text prompt (always shown for text & image-text, hidden for video) */}
             {mode !== "video" && (
               <div>
-                <label className="text-xs font-medium text-muted mb-2 block">
-                  {mode === "text" ? "Describe your animation" : "Animation instructions (optional)"}
+                <label className="block text-xs font-medium text-muted mb-2">
+                  {mode === "text" ? t("prompt.label") : t("prompt.labelOptional")}
+                  <span className="text-accent ml-1">{t("prompt.suggestEnglish")}</span>
                 </label>
                 <textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder={
                     mode === "text"
-                      ? "A red heart beating with a gentle pulse animation..."
-                      : "Animate this with a bouncing motion..."
+                      ? t("prompt.placeholder")
+                      : t("prompt.placeholderImage")
                   }
                   rows={4}
                   className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm placeholder:text-muted/40 focus:outline-none focus:border-accent transition-colors resize-none"
@@ -399,8 +457,8 @@ export default function Playground() {
             <div className="flex items-center gap-2 text-[11px] text-muted/70">
               <Clock size={12} />
               <span>
-                Estimated: <span className="text-muted">{getTimeEstimate(params.maxlen)}</span>
-                {" "}({getComplexityLabel(params.maxlen)} — {params.maxlen} tokens)
+                {t("time.estimate")}: <span className="text-muted">{getTimeEstimate(params.maxlen)}</span>
+                {" "}({getComplexityLabel(params.maxlen, t)} — {params.maxlen} {t("time.tokens")})
               </span>
             </div>
 
@@ -419,14 +477,14 @@ export default function Playground() {
                   <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                   <span>
                     {backend === "modal" && gpuStatus === "inactive" && elapsed < 10
-                      ? "Waking GPU..."
-                      : `Generating... ${formatTimer(elapsed)}`}
+                      ? t("actions.wakingGpu")
+                      : `${t("actions.generating")} ${formatTimer(elapsed)}`}
                   </span>
                 </>
               ) : (
                 <>
                   <Wand2 size={16} />
-                  Generate Animation
+                  {t("actions.generate")}
                 </>
               )}
             </button>
@@ -442,11 +500,11 @@ export default function Playground() {
                   {lastCost != null && backend === "modal" && (
                     <span className="flex items-center gap-1 text-muted">
                       <DollarSign size={11} />
-                      ${lastCost < 0.01 ? lastCost.toFixed(4) : lastCost.toFixed(3)} GPU cost
+                      ${lastCost < 0.01 ? lastCost.toFixed(4) : lastCost.toFixed(3)} {t("stats.gpuCost")}
                     </span>
                   )}
                 </div>
-                <span className="text-muted/50">A10G @ $1.10/hr</span>
+                <span className="text-muted/50">A10G @ $1.10/{t("stats.hour")}</span>
               </div>
             )}
 
@@ -477,13 +535,8 @@ export default function Playground() {
         <div className="flex items-start gap-3">
           <Sparkles size={14} className="text-accent mt-0.5 shrink-0" />
           <div className="text-xs text-muted leading-relaxed">
-            <strong className="text-foreground">How it works:</strong>{" "}
-            OmniLottie extends Qwen2.5-VL with a specialized Lottie tokenizer
-            that transforms JSON animation files into structured sequences of
-            commands and parameters — shapes, animation functions, and control
-            values. The model generates these parameterized Lottie tokens
-            autoregressively, which are then decoded back into valid Lottie JSON
-            for rendering as scalable vector animations.
+            <strong className="text-foreground">{t("howItWorks.title")}</strong>{" "}
+            {t("howItWorks.description")}
           </div>
         </div>
       </div>

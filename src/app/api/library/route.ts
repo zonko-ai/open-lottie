@@ -8,6 +8,11 @@ import { put, list, del } from "@vercel/blob";
  */
 
 export async function GET() {
+  // 如果没有配置 Vercel Blob token，返回空列表
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    return NextResponse.json({ items: [] });
+  }
+  
   try {
     const { blobs } = await list({ prefix: "generations/" });
 

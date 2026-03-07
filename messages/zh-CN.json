@@ -1,0 +1,97 @@
+{
+  "modes": {
+    "text": {
+      "label": "文本生成动画",
+      "description": "通过文字描述生成动画"
+    },
+    "image-text": {
+      "label": "图像+文本生成动画",
+      "description": "使用参考图像和提示词引导动画生成"
+    },
+    "video": {
+      "label": "视频转动画",
+      "description": "将视频内容转换为矢量动画"
+    }
+  },
+  "backend": {
+    "modal": "Modal GPU",
+    "huggingface": "HF空间(免费)",
+    "local": "本地GPU"
+  },
+  "prompt": {
+    "label": "描述您的动画",
+    "labelOptional": "动画说明（可选）",
+    "placeholder": "一颗红色爱心以柔和的脉动动画跳动...",
+    "placeholderImage": "为这个添加弹跳动画...",
+    "suggestEnglish": "（当前版本建议使用英文）",
+    "exampleText0": "一颗红色爱心以柔和的脉动动画跳动",
+    "exampleText1": "一个加载旋转器，带有渐隐渐现的旋转点",
+    "exampleText2": "一枚火箭带着尾焰向上发射",
+    "exampleText3": "一个挥手表情符号，平滑地来回摆动",
+    "exampleText4": "太阳从山上升起，光芒向外延伸",
+    "exampleImageText0": "为这个图标添加弹跳动画",
+    "exampleImageText1": "为这个形状添加旋转动画",
+    "exampleImageText2": "让这个角色挥手问好",
+    "exampleImageText3": "为这个标志添加发光脉动效果"
+  },
+  "image": {
+    "label": "参考图像",
+    "upload": "点击或拖拽上传图像",
+    "orPasteUrl": "或粘贴图片链接",
+    "urlPlaceholder": "粘贴图片链接..."
+  },
+  "video": {
+    "label": "视频文件",
+    "upload": "点击或拖拽上传视频",
+    "supportedFormats": "支持格式: MP4, WebM, MOV (最大 10MB)"
+  },
+  "actions": {
+    "generate": "生成动画",
+    "generating": "生成中...",
+    "wakingGpu": "唤醒GPU中...",
+    "download": "下载 JSON",
+    "copy": "复制 JSON",
+    "copied": "已复制！",
+    "reset": "重置"
+  },
+  "status": {
+    "running": "运行中",
+    "checking": "检测中...",
+    "inactive": "待机",
+    "gpuActive": "GPU 活跃",
+    "gpuInactive": "GPU 待机",
+    "firstRequest": "首次请求会唤醒GPU（约2分钟冷启动）"
+  },
+  "errors": {
+    "generateFailed": "生成失败",
+    "noPrompt": "请输入描述",
+    "noImage": "请上传图像",
+    "noVideo": "请上传视频"
+  },
+  "language": {
+    "label": "语言",
+    "en": "English",
+    "zh-CN": "简体中文",
+    "zh-TW": "繁體中文"
+  },
+  "common": {
+    "or": "或"
+  },
+  "time": {
+    "estimate": "预计时间",
+    "tokens": "令牌"
+  },
+  "complexity": {
+    "simple": "简单",
+    "medium": "中等",
+    "complex": "复杂"
+  },
+  "stats": {
+    "gpuCost": "GPU费用",
+    "hour": "小时"
+  },
+  "howItWorks": {
+    "title": "工作原理：",
+    "description": "OmniLottie 扩展了 Qwen2.5-VL，配备了专门的 Lottie 分词器，将 JSON 动画文件转换为结构化的命令和参数序列 — 形状、动画函数和控制值。模型以自回归方式生成这些参数化的 Lottie 令牌，然后解码回有效的 Lottie JSON，呈现为可缩放的矢量动画。"
+  }
+}

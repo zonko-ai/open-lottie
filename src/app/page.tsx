@@ -33,7 +33,7 @@ export default function Home() {
               rel="noopener noreferrer"
               className="text-xs text-muted hover:text-foreground transition-colors"
             >
-              Paper
+              论文
             </a>
             <a
               href="https://github.com/OpenVGLab/OmniLottie"
@@ -61,13 +61,12 @@ export default function Home() {
           CVPR 2026
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">
-          Turn anything into{" "}
-          <span className="text-accent">vector animations</span>
+          将任何内容转换为{" "}
+          <span className="text-accent">矢量动画</span>
         </h1>
         <p className="text-muted text-sm max-w-lg mx-auto leading-relaxed">
-          Generate professional Lottie animations from text descriptions,
-          reference images, or video. Powered by OmniLottie — the first
-          multimodal vector animation generator.
+          通过文字描述、参考图像或视频生成专业的Lottie动画。
+          由OmniLottie驱动 — 首个多模态矢量动画生成器。
         </p>
       </div>
 
@@ -83,7 +82,7 @@ export default function Home() {
       <footer className="border-t border-border py-6">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
           <p className="text-xs text-muted">
-            Built on{" "}
+            基于{" "}
             <a
               href="https://arxiv.org/abs/2603.02138"
               target="_blank"
@@ -92,10 +91,10 @@ export default function Home() {
             >
               OmniLottie
             </a>{" "}
-            by OpenVGLab
+            由OpenVGLab开发
           </p>
           <p className="text-xs text-muted/60">
-            Lottie is a trademark of LottieFiles. This is an independent project.
+            Lottie是LottieFiles的商标。这是一个独立项目。
           </p>
         </div>
       </footer>

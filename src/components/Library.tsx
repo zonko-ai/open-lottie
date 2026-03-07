@@ -103,7 +103,7 @@ export default function Library() {
         className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-2 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">Library</span>
+          <span className="text-sm font-medium">作品库</span>
           <span className="text-[10px] text-muted bg-surface-2 px-1.5 py-0.5 rounded-full">
             {items.length}
           </span>
@@ -144,7 +144,7 @@ export default function Library() {
                   {/* Info */}
                   <div className="p-2">
                     <p className="text-[10px] text-foreground truncate" title={meta?.prompt}>
-                      {meta?.prompt || "Untitled"}
+                      {meta?.prompt || "未命名"}
                     </p>
                     <div className="flex items-center gap-2 mt-1 text-[9px] text-muted/60">
                       {meta?.duration_sec ? (
