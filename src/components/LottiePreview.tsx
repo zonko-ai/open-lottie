@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Lottie animation preview component.
+ * Renders Lottie animations with playback controls and export options.
+ * @module components/LottiePreview
+ */
+
 "use client";
 
 import { useRef } from "react";
@@ -5,11 +11,31 @@ import Lottie, { LottieRefCurrentProps } from "lottie-react";
 import { Download, Play, RotateCcw, Code } from "lucide-react";
 import { useTranslations } from 'next-intl';
 
+/**
+ * Props for the LottiePreview component.
+ */
 interface LottiePreviewProps {
+  /** The Lottie animation data object, or null if no animation is loaded */
   animationData: Record<string, unknown> | null;
+  /** Whether an animation is currently being generated */
   isGenerating: boolean;
 }
 
+/**
+ * Component for previewing Lottie animations with interactive controls.
+ * Provides play/pause, restart, copy JSON, and download functionality.
+ * 
+ * @param props - The component props
+ * @returns A React component that displays the animation preview
+ * 
+ * @example
+ * ```tsx
+ * <LottiePreview
+ *   animationData={lottieJson}
+ *   isGenerating={false}
+ * />
+ * ```
+ */
 export default function LottiePreview({
   animationData,
   isGenerating,
@@ -18,6 +44,9 @@ export default function LottiePreview({
   const lottieRef = useRef<LottieRefCurrentProps>(null);
   const isPlaying = useRef(true);
 
+  /**
+   * Toggles play/pause state of the animation.
+   */
   const handlePlayPause = () => {
     if (!lottieRef.current) return;
     if (isPlaying.current) {
@@ -28,12 +57,18 @@ export default function LottiePreview({
     isPlaying.current = !isPlaying.current;
   };
 
+  /**
+   * Restarts the animation from the beginning.
+   */
   const handleRestart = () => {
     if (!lottieRef.current) return;
     lottieRef.current.goToAndPlay(0);
     isPlaying.current = true;
   };
 
+  /**
+   * Downloads the animation as a JSON file.
+   */
   const handleDownloadJSON = () => {
     if (!animationData) return;
     const blob = new Blob([JSON.stringify(animationData, null, 2)], {
@@ -47,6 +82,9 @@ export default function LottiePreview({
     URL.revokeObjectURL(url);
   };
 
+  /**
+   * Copies the animation JSON to the clipboard.
+   */
   const handleCopyJSON = async () => {
     if (!animationData) return;
     await navigator.clipboard.writeText(

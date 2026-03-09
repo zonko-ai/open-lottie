@@ -1,16 +1,48 @@
+/**
+ * @fileoverview File upload component for images and videos.
+ * Provides drag-and-drop and click-to-browse functionality with preview.
+ * @module components/FileUpload
+ */
+
 "use client";
 
 import { useCallback, useState, useRef } from "react";
 import { X, Image as ImageIcon, Film } from "lucide-react";
 import { useTranslations } from 'next-intl';
 
+/**
+ * Props for the FileUpload component.
+ */
 interface FileUploadProps {
+  /** Accepted file types (MIME types) */
   accept: string;
+  /** Type of file being uploaded - affects preview rendering */
   type: "image" | "video";
+  /** Currently selected file, or null if none */
   file: File | null;
+  /** Callback when file selection changes */
   onFileChange: (file: File | null) => void;
 }
 
+/**
+ * Component for uploading image or video files with drag-and-drop support.
+ * Shows a preview of the selected file and allows clearing the selection.
+ * 
+ * @param props - The component props
+ * @returns A React component for file upload with preview
+ * 
+ * @example
+ * ```tsx
+ * const [file, setFile] = useState<File | null>(null);
+ * 
+ * <FileUpload
+ *   accept="image/png,image/jpeg"
+ *   type="image"
+ *   file={file}
+ *   onFileChange={setFile}
+ * />
+ * ```
+ */
 export default function FileUpload({
   accept,
   type,
@@ -22,6 +54,10 @@ export default function FileUpload({
   const [preview, setPreview] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  /**
+   * Processes a selected file and generates a preview.
+   * @param f - The file to process
+   */
   const handleFile = useCallback(
     (f: File) => {
       onFileChange(f);
@@ -36,6 +72,10 @@ export default function FileUpload({
     [onFileChange, type]
   );
 
+  /**
+   * Handles file drop from drag-and-drop operation.
+   * @param e - The drag event
+   */
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
@@ -46,6 +86,9 @@ export default function FileUpload({
     [handleFile]
   );
 
+  /**
+   * Clears the current file selection and preview.
+   */
   const handleClear = () => {
     onFileChange(null);
     setPreview(null);

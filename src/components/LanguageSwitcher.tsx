@@ -1,20 +1,52 @@
+/**
+ * @fileoverview Language switcher component for internationalization.
+ * Provides a dropdown menu for selecting the application language.
+ * @module components/LanguageSwitcher
+ */
+
 "use client";
 
 import { useTransition, useState, useRef, useEffect } from "react";
 import { Globe, Loader2 } from "lucide-react";
 import { locales, localeNames, type Locale } from "@/i18n/config";
 
+/**
+ * Props for the LanguageSwitcher component.
+ */
 interface LanguageSwitcherProps {
+  /** The currently selected locale */
   currentLocale: Locale;
+  /** Callback fired when a new locale is selected */
   onLocaleChange: (locale: Locale) => void;
 }
 
+/**
+ * Component for switching between supported languages.
+ * Provides an accessible dropdown with keyboard navigation support.
+ * 
+ * @param props - The component props
+ * @returns A React component for language selection
+ * 
+ * @example
+ * ```tsx
+ * const [locale, setLocale] = useState<Locale>('en');
+ * 
+ * <LanguageSwitcher
+ *   currentLocale={locale}
+ *   onLocaleChange={setLocale}
+ * />
+ * ```
+ */
 export default function LanguageSwitcher({ currentLocale, onLocaleChange }: LanguageSwitcherProps) {
   const [isPending, startTransition] = useTransition();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
+  /**
+   * Handles locale selection with transition feedback.
+   * @param locale - The locale to switch to
+   */
   const handleChange = (locale: Locale) => {
     startTransition(() => {
       onLocaleChange(locale);
@@ -22,6 +54,9 @@ export default function LanguageSwitcher({ currentLocale, onLocaleChange }: Lang
     setIsOpen(false);
   };
 
+  /**
+   * Closes dropdown when clicking outside.
+   */
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -33,6 +68,10 @@ export default function LanguageSwitcher({ currentLocale, onLocaleChange }: Lang
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  /**
+   * Handles keyboard navigation for the dropdown button.
+   * @param event - The keyboard event
+   */
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === "Escape") {
       setIsOpen(false);
@@ -48,6 +87,12 @@ export default function LanguageSwitcher({ currentLocale, onLocaleChange }: Lang
     }
   };
 
+  /**
+   * Handles keyboard navigation for dropdown menu items.
+   * @param event - The keyboard event
+   * @param locale - The locale for this menu item
+   * @param index - The index of this menu item
+   */
   const handleItemKeyDown = (event: React.KeyboardEvent, locale: Locale, index: number) => {
     if (event.key === "Escape") {
       setIsOpen(false);

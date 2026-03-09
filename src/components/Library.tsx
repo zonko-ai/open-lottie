@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Library component for managing saved Lottie animations.
+ * Displays a grid of saved animations with preview, download, and delete options.
+ * @module components/Library
+ */
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -7,26 +13,56 @@ import { useTranslations } from 'next-intl';
 
 const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
 
+/**
+ * Represents a saved animation item in the library.
+ */
 interface LibraryItem {
+  /** The URL where the animation data is stored */
   url: string;
+  /** The pathname of the stored file */
   pathname: string;
+  /** ISO timestamp when the animation was created */
   createdAt: string;
+  /** Size of the stored file in bytes */
   size: number;
 }
 
+/**
+ * Represents the stored animation data with metadata.
+ */
 interface StoredData {
+  /** The Lottie animation JSON data */
   lottie_json: Record<string, unknown>;
+  /** Metadata about the animation generation */
   metadata: {
+    /** The prompt used to generate the animation */
     prompt: string;
+    /** The generation mode (text, image-text, video) */
     mode: string;
+    /** Duration of generation in seconds */
     duration_sec: number;
+    /** GPU cost in USD */
     gpu_cost_usd: number;
+    /** Number of layers in the animation */
     layers: number;
+    /** Animation width in pixels */
     width: number;
+    /** Animation height in pixels */
     height: number;
   };
 }
 
+/**
+ * Component for displaying and managing a library of saved Lottie animations.
+ * Provides a collapsible grid view with preview, download, and delete functionality.
+ * 
+ * @returns A React component that displays the animation library, or null if empty/loading
+ * 
+ * @example
+ * ```tsx
+ * <Library />
+ * ```
+ */
 export default function Library() {
   const t = useTranslations('library');
   const [items, setItems] = useState<LibraryItem[]>([]);
@@ -34,6 +70,9 @@ export default function Library() {
   const [loading, setLoading] = useState(true);
   const [loadedData, setLoadedData] = useState<Record<string, StoredData>>({});
 
+  /**
+   * Fetches the list of saved animations from the API.
+   */
   const fetchLibrary = useCallback(async () => {
     try {
       const res = await fetch("/api/library");
@@ -50,6 +89,11 @@ export default function Library() {
     fetchLibrary();
   }, [fetchLibrary]);
 
+  /**
+   * Loads animation data for a specific item by URL.
+   * @param url - The URL of the animation data to load
+   * @returns The loaded data or null if loading fails
+   */
   const loadItem = useCallback(async (url: string) => {
     if (loadedData[url]) return loadedData[url];
     try {
@@ -66,6 +110,10 @@ export default function Library() {
     items.forEach((item) => loadItem(item.url));
   }, [items, loadItem]);
 
+  /**
+   * Deletes an animation from the library.
+   * @param url - The URL of the animation to delete
+   */
   const handleDelete = async (url: string) => {
     try {
       await fetch(`/api/library?url=${encodeURIComponent(url)}`, {
@@ -82,6 +130,11 @@ export default function Library() {
     }
   };
 
+  /**
+   * Downloads an animation as a JSON file.
+   * @param data - The animation data to download
+   * @param prompt - The prompt used for the filename
+   */
   const handleDownload = (data: StoredData, prompt: string) => {
     const blob = new Blob([JSON.stringify(data.lottie_json, null, 2)], {
       type: "application/json",
@@ -128,7 +181,6 @@ export default function Library() {
                   key={item.url}
                   className="group bg-background rounded-lg border border-border overflow-hidden hover:border-accent/30 transition-colors"
                 >
-                  {/* Preview */}
                   <div className="aspect-square bg-surface-2 flex items-center justify-center p-2">
                     {data ? (
                       <Lottie
@@ -142,7 +194,6 @@ export default function Library() {
                     )}
                   </div>
 
-                  {/* Info */}
                   <div className="p-2">
                     <p className="text-[10px] text-foreground truncate" title={meta?.prompt}>
                       {meta?.prompt || t('unnamed')}
@@ -163,7 +214,6 @@ export default function Library() {
                       <span>{meta?.layers || 0}L</span>
                     </div>
 
-                    {/* Actions */}
                     <div className="flex gap-1 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                       {data && (
                         <button

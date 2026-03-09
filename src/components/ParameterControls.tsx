@@ -1,23 +1,47 @@
+/**
+ * @fileoverview Parameter controls for Lottie animation generation.
+ * Provides UI controls for adjusting generation parameters like temperature, top-p, etc.
+ * @module components/ParameterControls
+ */
+
 "use client";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import { useTranslations } from 'next-intl';
 
+/**
+ * Parameters for controlling Lottie animation generation.
+ */
 export interface GenerationParams {
+  /** Sampling temperature (0-2). Higher values produce more creative outputs. */
   temperature: number;
+  /** Nucleus sampling threshold (0-1). */
   top_p: number;
+  /** Limits token selection to top k highest probabilities. */
   top_k: number;
+  /** Penalty for repeated tokens. 1.0 means no penalty. */
   repetition_penalty: number;
+  /** Number of candidates to generate and select best from. */
   num_candidates: number;
+  /** Maximum sequence length for generation. */
   maxlen: number;
 }
 
+/**
+ * Props for the ParameterControls component.
+ */
 interface ParameterControlsProps {
+  /** Current parameter values */
   params: GenerationParams;
+  /** Callback when parameters change */
   onChange: (params: GenerationParams) => void;
 }
 
+/**
+ * Default generation parameters.
+ * These values are used as initial state and for reset functionality.
+ */
 export const DEFAULT_PARAMS: GenerationParams = {
   temperature: 0.9,
   top_p: 0.25,
@@ -27,6 +51,23 @@ export const DEFAULT_PARAMS: GenerationParams = {
   maxlen: 5556,
 };
 
+/**
+ * Component for adjusting Lottie generation parameters.
+ * Provides a collapsible panel with sliders for each parameter.
+ * 
+ * @param props - The component props
+ * @returns A React component with parameter adjustment controls
+ * 
+ * @example
+ * ```tsx
+ * const [params, setParams] = useState(DEFAULT_PARAMS);
+ * 
+ * <ParameterControls
+ *   params={params}
+ *   onChange={setParams}
+ * />
+ * ```
+ */
 export default function ParameterControls({
   params,
   onChange,
@@ -34,6 +75,11 @@ export default function ParameterControls({
   const t = useTranslations('params');
   const [expanded, setExpanded] = useState(false);
 
+  /**
+   * Updates a single parameter value.
+   * @param key - The parameter key to update
+   * @param value - The new value for the parameter
+   */
   const update = (key: keyof GenerationParams, value: number) => {
     onChange({ ...params, [key]: value });
   };
