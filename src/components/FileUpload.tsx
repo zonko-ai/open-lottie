@@ -69,6 +69,7 @@ export default function FileUpload({
       {file && preview ? (
         <div className="relative">
           {type === "image" ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={preview}
               alt="Upload preview"

@@ -10,7 +10,7 @@ import ParameterControls, {
   DEFAULT_PARAMS,
 } from "./ParameterControls";
 import LanguageSwitcher from "./LanguageSwitcher";
-import { locales, type Locale } from "@/i18n/config";
+import { type Locale } from "@/i18n/config";
 
 type Mode = "text" | "image-text" | "video";
 type Backend = "modal" | "huggingface" | "local";

@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import Lottie, { LottieRefCurrentProps } from "lottie-react";
-import { Download, Play, Pause, RotateCcw, Code } from "lucide-react";
+import { Download, Play, RotateCcw, Code } from "lucide-react";
 
 interface LottiePreviewProps {
   animationData: Record<string, unknown> | null;

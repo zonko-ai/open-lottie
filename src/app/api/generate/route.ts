@@ -426,7 +426,8 @@ async function generateViaLocal(
   
   const iframeHtml = dataArray?.[0] as string | undefined;
   const statusMsg = dataArray?.[1] as string | undefined;
-  const jsonFilePath = dataArray?.[2] as string | undefined;
+  // jsonFilePath is available but not used for security reasons (avoiding arbitrary file read)
+  // const jsonFilePath = dataArray?.[2] as string | undefined;
 
   if (
     statusMsg &&
