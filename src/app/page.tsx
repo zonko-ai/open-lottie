@@ -1,7 +1,26 @@
+/**
+ * @fileoverview Home page component for the OpenLottie application.
+ * Renders the main layout with navigation, hero section, playground, and footer.
+ * @module app/page
+ */
+
 import Playground from "@/components/Playground";
 import Library from "@/components/Library";
 import { useTranslations } from 'next-intl';
 
+/**
+ * Home page component that serves as the main entry point for the application.
+ * Displays navigation, hero section with badge and title, the playground component,
+ * animation library, and footer with attribution.
+ * 
+ * @returns The home page React component
+ * 
+ * @example
+ * ```tsx
+ * // This is the default export for the Next.js page
+ * export default Home;
+ * ```
+ */
 export default function Home() {
   const t = useTranslations();
   

@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Main playground component for Lottie animation generation.
+ * Provides the primary UI for text-to-animation, image-to-animation, and video-to-animation modes.
+ * @module components/Playground
+ */
+
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
@@ -12,33 +18,68 @@ import ParameterControls, {
 import LanguageSwitcher from "./LanguageSwitcher";
 import { type Locale } from "@/i18n/config";
 
+/** Generation mode type */
 type Mode = "text" | "image-text" | "video";
+
+/** Backend service type */
 type Backend = "modal" | "huggingface" | "local";
+
+/** GPU status type */
 type GpuStatus = "checking" | "active" | "inactive";
 
+/**
+ * Returns estimated generation time based on max token length.
+ * @param maxlen - Maximum token length for generation
+ * @returns Human-readable time estimate string
+ */
 function getTimeEstimate(maxlen: number): string {
   if (maxlen <= 3000) return "~30-60s";
   if (maxlen <= 5556) return "~2-4 min";
   return "~5-10 min";
 }
 
+/**
+ * Returns complexity label based on max token length.
+ * @param maxlen - Maximum token length for generation
+ * @param t - Translation function
+ * @returns Translated complexity label
+ */
 function getComplexityLabel(maxlen: number, t: (key: string) => string): string {
   if (maxlen <= 3000) return t("complexity.simple");
   if (maxlen <= 5556) return t("complexity.medium");
   return t("complexity.complex");
 }
 
+/**
+ * Formats seconds into a human-readable timer string.
+ * @param seconds - Number of seconds
+ * @returns Formatted time string (e.g., "1:30" or "45s")
+ */
 function formatTimer(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return m > 0 ? `${m}:${s.toString().padStart(2, "0")}` : `${s}s`;
 }
 
+/**
+ * Main playground component for generating Lottie animations.
+ * Supports three generation modes: text, image-text, and video.
+ * Provides backend selection, parameter controls, and real-time preview.
+ * 
+ * @returns The playground React component
+ * 
+ * @example
+ * ```tsx
+ * // In a page component
+ * <Playground />
+ * ```
+ */
 export default function Playground() {
   const t = useTranslations();
   const currentLocale = useLocale() as Locale;
   const [mounted, setMounted] = useState(false);
   
+  /** Available generation modes with labels and icons */
   const MODES: { id: Mode; label: string; icon: typeof Type; description: string }[] = [
     {
       id: "text",
@@ -60,6 +101,7 @@ export default function Playground() {
     },
   ];
 
+  /** Example prompts for each generation mode */
   const EXAMPLE_PROMPTS: Record<Mode, string[]> = {
     text: [
       t("prompt.exampleText0"),
@@ -77,6 +119,11 @@ export default function Playground() {
     video: [],
   };
 
+  /**
+   * Handles locale change with URL state preservation.
+   * Saves current mode, backend, and prompt to URL params before reload.
+   * @param locale - The new locale to switch to
+   */
   const handleLocaleChange = async (locale: Locale) => {
     const url = new URL(window.location.href);
     url.searchParams.set("mode", mode);
@@ -110,6 +157,9 @@ export default function Playground() {
   const [lastDuration, setLastDuration] = useState<number | null>(null);
   const [lastCost, setLastCost] = useState<number | null>(null);
 
+  /**
+   * Initialize component state from URL parameters on mount.
+   */
   useEffect(() => {
     setMounted(true);
     
@@ -129,6 +179,9 @@ export default function Playground() {
     }
   }, []);
 
+  /**
+   * Periodically check GPU status for Modal backend.
+   */
   useEffect(() => {
     const checkGpu = async () => {
       try {
@@ -145,6 +198,9 @@ export default function Playground() {
     return () => clearInterval(interval);
   }, []);
 
+  /**
+   * Track elapsed time during generation.
+   */
   useEffect(() => {
     if (isGenerating) {
       setElapsed(0);
@@ -162,6 +218,10 @@ export default function Playground() {
     };
   }, [isGenerating]);
 
+  /**
+   * Checks if generation is possible based on current mode and inputs.
+   * @returns True if generation can proceed
+   */
   const canGenerate = useCallback(() => {
     switch (mode) {
       case "text":
@@ -173,6 +233,10 @@ export default function Playground() {
     }
   }, [mode, prompt, imageFile, imageUrl, videoFile]);
 
+  /**
+   * Handles the generation request to the API.
+   * Sends form data with mode, backend, files, and parameters.
+   */
   const handleGenerate = async () => {
     if (!canGenerate()) return;
     setIsGenerating(true);
