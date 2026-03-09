@@ -1,4 +1,20 @@
 {
+  "nav": {
+    "paper": "論文",
+    "github": "GitHub",
+    "huggingface": "HuggingFace"
+  },
+  "hero": {
+    "badge": "CVPR 2026",
+    "title": "將任何內容轉換為",
+    "titleHighlight": "向量動畫",
+    "description": "透過文字描述、參考影像或影片生成專業的Lottie動畫。由OmniLottie驅動 — 首個多模態向量動畫生成器。"
+  },
+  "footer": {
+    "poweredBy": "基於",
+    "developedBy": "由OpenVGLab開發",
+    "disclaimer": "Lottie是LottieFiles的商標。這是一個獨立專案。"
+  },
   "modes": {
     "text": {
       "label": "文字生成動畫",
@@ -38,12 +54,18 @@
     "label": "參考影像",
     "upload": "點擊或拖曳上傳影像",
     "orPasteUrl": "或貼上圖片連結",
-    "urlPlaceholder": "貼上圖片連結..."
+    "urlPlaceholder": "貼上圖片連結...",
+    "dragDrop": "拖放圖片到此處或",
+    "clickBrowse": "點擊瀏覽",
+    "supportedFormats": "PNG、JPG、WebP，最大10MB"
   },
   "video": {
     "label": "影片檔案",
     "upload": "點擊或拖曳上傳影片",
-    "supportedFormats": "支援格式: MP4, WebM, MOV (最大 10MB)"
+    "supportedFormats": "支援格式: MP4, WebM, MOV (最大 10MB)",
+    "dragDrop": "拖放影片到此處或",
+    "clickBrowse": "點擊瀏覽",
+    "supportedFormatsVideo": "MP4、WebM，最大50MB"
   },
   "actions": {
     "generate": "生成動畫",

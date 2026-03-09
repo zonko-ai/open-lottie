@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 const MODAL_URL =
   "https://nkjain92--omnilottie-omnilottieservice-generate.modal.run";
 const HF_SPACE = "OmniLottie/OmniLottie";
-const LOCAL_URL = "http://localhost:7860";
+const LOCAL_URL = process.env.LOCAL_GRADIO_URL || "";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const GEMINI_MODEL = "gemini-3.1-flash-lite-preview";
 
@@ -115,6 +115,12 @@ export async function POST(request: NextRequest) {
         maxlen
       );
     } else if (backend === "local") {
+      if (!LOCAL_URL) {
+        return NextResponse.json(
+          { error: "Local backend is not configured" },
+          { status: 503 }
+        );
+      }
       return await generateViaLocal(
         mode,
         finalPrompt,
@@ -414,25 +420,13 @@ async function generateViaLocal(
     });
   }
 
-  console.log("=== Gradio Response ===");
-  console.log("result type:", typeof result);
-  console.log("result:", JSON.stringify(result).substring(0, 500));
-  console.log("result.data type:", typeof result?.data);
-  console.log("result.data:", result?.data);
-  
   // Gradio 返回 { type: "data", data: [...] }
   const gradioResult = result as unknown as { data: unknown[] };
   const dataArray = gradioResult.data as unknown[];
-  console.log("dataArray type:", typeof dataArray);
-  console.log("dataArray:", dataArray);
   
   const iframeHtml = dataArray?.[0] as string | undefined;
   const statusMsg = dataArray?.[1] as string | undefined;
   const jsonFilePath = dataArray?.[2] as string | undefined;
-  
-  console.log("iframeHtml type:", typeof iframeHtml, "length:", iframeHtml?.length);
-  console.log("statusMsg:", statusMsg);
-  console.log("jsonFilePath:", jsonFilePath);
 
   if (
     statusMsg &&
@@ -441,20 +435,7 @@ async function generateViaLocal(
     return NextResponse.json({ error: statusMsg }, { status: 500 });
   }
 
-  // 方法1: 直接从 JSON 文件路径读取
-  if (jsonFilePath) {
-    try {
-      const fs = await import("fs");
-      const fileContent = fs.readFileSync(jsonFilePath, "utf-8");
-      const lottieJson = JSON.parse(fileContent);
-      console.log("✅ Successfully read from file path");
-      return NextResponse.json({ lottie_json: lottieJson });
-    } catch (e) {
-      console.log("Failed to read from file path:", e);
-    }
-  }
-
-  // 方法2: 从 iframe 中提取 HTML，再从 HTML 中提取 JSON
+  // 方法1: 从 iframe 中提取 JSON（安全方式，不直接读取文件系统）
   if (iframeHtml) {
     // 从 <iframe src="data:text/html;base64,..."> 中提取 base64 内容
     const iframeMatch = iframeHtml.match(/src="data:text\/html;base64,([A-Za-z0-9+/=]+)"/);

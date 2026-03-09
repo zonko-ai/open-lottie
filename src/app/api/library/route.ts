@@ -37,6 +37,14 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  // 如果没有配置 Vercel Blob token，返回错误
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    return NextResponse.json(
+      { error: "Library feature is not configured" },
+      { status: 503 }
+    );
+  }
+  
   try {
     const body = await request.json();
     const { lottie_json, prompt, mode, duration_sec, gpu_cost_usd } = body;
@@ -88,6 +96,14 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  // 如果没有配置 Vercel Blob token，返回错误
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    return NextResponse.json(
+      { error: "Library feature is not configured" },
+      { status: 503 }
+    );
+  }
+  
   try {
     const url = request.nextUrl.searchParams.get("url");
     if (!url) {

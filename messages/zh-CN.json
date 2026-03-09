@@ -1,4 +1,20 @@
 {
+  "nav": {
+    "paper": "论文",
+    "github": "GitHub",
+    "huggingface": "HuggingFace"
+  },
+  "hero": {
+    "badge": "CVPR 2026",
+    "title": "将任何内容转换为",
+    "titleHighlight": "矢量动画",
+    "description": "通过文字描述、参考图像或视频生成专业的Lottie动画。由OmniLottie驱动 — 首个多模态矢量动画生成器。"
+  },
+  "footer": {
+    "poweredBy": "基于",
+    "developedBy": "由OpenVGLab开发",
+    "disclaimer": "Lottie是LottieFiles的商标。这是一个独立项目。"
+  },
   "modes": {
     "text": {
       "label": "文本生成动画",
@@ -38,12 +54,18 @@
     "label": "参考图像",
     "upload": "点击或拖拽上传图像",
     "orPasteUrl": "或粘贴图片链接",
-    "urlPlaceholder": "粘贴图片链接..."
+    "urlPlaceholder": "粘贴图片链接...",
+    "dragDrop": "拖放图片到此处或",
+    "clickBrowse": "点击浏览",
+    "supportedFormats": "PNG、JPG、WebP，最大10MB"
   },
   "video": {
     "label": "视频文件",
     "upload": "点击或拖拽上传视频",
-    "supportedFormats": "支持格式: MP4, WebM, MOV (最大 10MB)"
+    "supportedFormats": "支持格式: MP4, WebM, MOV (最大 10MB)",
+    "dragDrop": "拖放视频到此处或",
+    "clickBrowse": "点击浏览",
+    "supportedFormatsVideo": "MP4、WebM，最大50MB"
   },
   "actions": {
     "generate": "生成动画",

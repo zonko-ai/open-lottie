@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useState, useRef } from "react";
-import { Upload, X, Image as ImageIcon, Film } from "lucide-react";
+import { X, Image as ImageIcon, Film } from "lucide-react";
+import { useTranslations } from 'next-intl';
 
 interface FileUploadProps {
   accept: string;
@@ -16,6 +17,7 @@ export default function FileUpload({
   file,
   onFileChange,
 }: FileUploadProps) {
+  const t = useTranslations(type === "image" ? "image" : "video");
   const [isDragging, setIsDragging] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -85,6 +87,7 @@ export default function FileUpload({
           <button
             onClick={handleClear}
             className="absolute top-2 right-2 p-1 rounded-full bg-background/80 hover:bg-background text-muted hover:text-foreground transition-colors"
+            aria-label="Clear"
           >
             <X size={14} />
           </button>
@@ -99,13 +102,11 @@ export default function FileUpload({
           </div>
           <div className="text-center">
             <p className="text-xs text-foreground">
-              拖放{type === "image" ? "图片" : "视频"}到此处或{" "}
-              <span className="text-accent">点击浏览</span>
+              {t('dragDrop')}{" "}
+              <span className="text-accent">{t('clickBrowse')}</span>
             </p>
             <p className="text-[10px] text-muted mt-0.5">
-              {type === "image"
-                ? "PNG、JPG、WebP，最大10MB"
-                : "MP4、WebM，最大50MB"}
+              {type === "image" ? t('supportedFormats') : t('supportedFormatsVideo')}
             </p>
           </div>
           <input

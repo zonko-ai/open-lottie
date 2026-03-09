@@ -1,4 +1,20 @@
 {
+  "nav": {
+    "paper": "Paper",
+    "github": "GitHub",
+    "huggingface": "HuggingFace"
+  },
+  "hero": {
+    "badge": "CVPR 2026",
+    "title": "Transform anything into ",
+    "titleHighlight": "vector animations",
+    "description": "Generate professional Lottie animations from text descriptions, reference images, or videos. Powered by OmniLottie — the first multimodal vector animation generator."
+  },
+  "footer": {
+    "poweredBy": "Powered by",
+    "developedBy": "developed by OpenVGLab",
+    "disclaimer": "Lottie is a trademark of LottieFiles. This is an independent project."
+  },
   "modes": {
     "text": {
       "label": "Text to Animation",
@@ -38,12 +54,18 @@
     "label": "Reference Image",
     "upload": "Click or drag to upload image",
     "orPasteUrl": "Or paste image URL",
-    "urlPlaceholder": "Paste image URL..."
+    "urlPlaceholder": "Paste image URL...",
+    "dragDrop": "Drag and drop image here or",
+    "clickBrowse": "click to browse",
+    "supportedFormats": "PNG, JPG, WebP (max 10MB)"
   },
   "video": {
     "label": "Video File",
     "upload": "Click or drag to upload video",
-    "supportedFormats": "Supported: MP4, WebM, MOV (max 10MB)"
+    "supportedFormats": "Supported: MP4, WebM, MOV (max 10MB)",
+    "dragDrop": "Drag and drop video here or",
+    "clickBrowse": "click to browse",
+    "supportedFormatsVideo": "MP4, WebM (max 50MB)"
   },
   "actions": {
     "generate": "Generate Animation",

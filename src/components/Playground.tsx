@@ -37,6 +37,7 @@ function formatTimer(seconds: number): string {
 export default function Playground() {
   const t = useTranslations();
   const currentLocale = useLocale() as Locale;
+  const [mounted, setMounted] = useState(false);
   
   const MODES: { id: Mode; label: string; icon: typeof Type; description: string }[] = [
     {
@@ -77,7 +78,6 @@ export default function Playground() {
   };
 
   const handleLocaleChange = async (locale: Locale) => {
-    // 保存当前状态到 URL 参数
     const url = new URL(window.location.href);
     url.searchParams.set("mode", mode);
     url.searchParams.set("backend", backend);
@@ -89,26 +89,11 @@ export default function Playground() {
       body: JSON.stringify({ locale }),
     });
     
-    // 使用保存的 URL 刷新页面
     window.location.href = url.toString();
   };
   
-  // 从 URL 参数恢复状态
-  const [mode, setMode] = useState<Mode>(() => {
-    if (typeof window !== "undefined") {
-      const urlMode = new URLSearchParams(window.location.search).get("mode");
-      if (urlMode === "text" || urlMode === "image-text" || urlMode === "video") {
-        return urlMode;
-      }
-    }
-    return "text";
-  });
-  const [prompt, setPrompt] = useState(() => {
-    if (typeof window !== "undefined") {
-      return new URLSearchParams(window.location.search).get("prompt") || "";
-    }
-    return "";
-  });
+  const [mode, setMode] = useState<Mode>("text");
+  const [prompt, setPrompt] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -116,26 +101,34 @@ export default function Playground() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [animationData, setAnimationData] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [backend, setBackend] = useState<Backend>(() => {
-    if (typeof window !== "undefined") {
-      const urlBackend = new URLSearchParams(window.location.search).get("backend");
-      if (urlBackend === "modal" || urlBackend === "huggingface" || urlBackend === "local") {
-        return urlBackend;
-      }
-    }
-    return "local";
-  });
+  const [backend, setBackend] = useState<Backend>("local");
   const [gpuStatus, setGpuStatus] = useState<GpuStatus>("checking");
 
-  // Timer
   const [elapsed, setElapsed] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Last generation stats
   const [lastDuration, setLastDuration] = useState<number | null>(null);
   const [lastCost, setLastCost] = useState<number | null>(null);
 
-  // Check GPU status on mount and periodically
+  useEffect(() => {
+    setMounted(true);
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlMode = urlParams.get("mode");
+    const urlBackend = urlParams.get("backend");
+    const urlPrompt = urlParams.get("prompt");
+    
+    if (urlMode === "text" || urlMode === "image-text" || urlMode === "video") {
+      setMode(urlMode);
+    }
+    if (urlBackend === "modal" || urlBackend === "huggingface" || urlBackend === "local") {
+      setBackend(urlBackend);
+    }
+    if (urlPrompt) {
+      setPrompt(urlPrompt);
+    }
+  }, []);
+
   useEffect(() => {
     const checkGpu = async () => {
       try {
@@ -152,7 +145,6 @@ export default function Playground() {
     return () => clearInterval(interval);
   }, []);
 
-  // Timer effect
   useEffect(() => {
     if (isGenerating) {
       setElapsed(0);
@@ -222,7 +214,6 @@ export default function Playground() {
         setAnimationData(data.lottie_json);
         if (backend === "modal") setGpuStatus("active");
 
-        // Auto-save to library
         fetch("/api/library", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -245,12 +236,14 @@ export default function Playground() {
     }
   };
 
+  if (!mounted) {
+    return null;
+  }
+
   return (
     <div className="w-full max-w-6xl mx-auto">
-      {/* GPU Status + Backend selector + Language */}
       <div className="flex items-center justify-between mb-4 px-1">
         <div className="flex items-center gap-3">
-          {/* GPU status indicator */}
           <div className="flex items-center gap-1.5">
             {gpuStatus === "active" ? (
               <Zap size={13} className="text-green-400" />
@@ -286,7 +279,6 @@ export default function Playground() {
           )}
         </div>
 
-        {/* Backend toggle */}
         <div className="flex items-center gap-1 bg-surface rounded-lg p-0.5">
           <button
             onClick={() => setBackend("modal")}
@@ -320,11 +312,9 @@ export default function Playground() {
           </button>
         </div>
 
-        {/* Language Switcher */}
         <LanguageSwitcher currentLocale={currentLocale} onLocaleChange={handleLocaleChange} />
       </div>
 
-      {/* Mode tabs */}
       <div className="flex gap-1 p-1 bg-surface rounded-xl mb-6">
         {MODES.map((m) => {
           const Icon = m.icon;
@@ -346,9 +336,7 @@ export default function Playground() {
         })}
       </div>
 
-      {/* Main playground area */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Left: Input panel */}
         <div className="bg-surface rounded-xl border border-border overflow-hidden">
           <div className="px-4 py-3 border-b border-border">
             <h3 className="text-sm font-medium">
@@ -360,7 +348,6 @@ export default function Playground() {
           </div>
 
           <div className="p-4 space-y-4">
-            {/* Image upload for image-text mode */}
             {mode === "image-text" && (
               <div className="space-y-2">
                 <label className="text-xs font-medium text-muted block">
@@ -397,7 +384,6 @@ export default function Playground() {
               </div>
             )}
 
-            {/* Video upload for video mode */}
             {mode === "video" && (
               <div>
                 <label className="text-xs font-medium text-muted mb-2 block">
@@ -412,7 +398,6 @@ export default function Playground() {
               </div>
             )}
 
-            {/* Text prompt (always shown for text & image-text, hidden for video) */}
             {mode !== "video" && (
               <div>
                 <label className="block text-xs font-medium text-muted mb-2">
@@ -431,7 +416,6 @@ export default function Playground() {
                   className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm placeholder:text-muted/40 focus:outline-none focus:border-accent transition-colors resize-none"
                 />
 
-                {/* Example prompts */}
                 {EXAMPLE_PROMPTS[mode].length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {EXAMPLE_PROMPTS[mode].map((example, i) => (
@@ -450,10 +434,8 @@ export default function Playground() {
               </div>
             )}
 
-            {/* Parameters */}
             <ParameterControls params={params} onChange={setParams} />
 
-            {/* Time estimate */}
             <div className="flex items-center gap-2 text-[11px] text-muted/70">
               <Clock size={12} />
               <span>
@@ -462,7 +444,6 @@ export default function Playground() {
               </span>
             </div>
 
-            {/* Generate button */}
             <button
               onClick={handleGenerate}
               disabled={!canGenerate() || isGenerating}
@@ -489,7 +470,6 @@ export default function Playground() {
               )}
             </button>
 
-            {/* Generation stats (after completion) */}
             {lastDuration != null && (
               <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-surface-2 border border-border text-[11px]">
                 <div className="flex items-center gap-3">
@@ -508,7 +488,6 @@ export default function Playground() {
               </div>
             )}
 
-            {/* Error display */}
             {error && (
               <div className="px-3 py-2 rounded-lg text-xs bg-red-500/10 text-red-400 border border-red-500/20">
                 {error}
@@ -517,7 +496,6 @@ export default function Playground() {
           </div>
         </div>
 
-        {/* Right: Preview panel */}
         <div
           className={`bg-surface rounded-xl border border-border overflow-hidden ${
             isGenerating ? "generating" : ""
@@ -530,7 +508,6 @@ export default function Playground() {
         </div>
       </div>
 
-      {/* Technical details */}
       <div className="mt-6 px-4 py-3 bg-surface rounded-xl border border-border">
         <div className="flex items-start gap-3">
           <Sparkles size={14} className="text-accent mt-0.5 shrink-0" />
