@@ -1,37 +1,78 @@
+/**
+ * @fileoverview Library component for managing saved Lottie animations.
+ * Displays a grid of saved animations with preview, download, and delete options.
+ * @module components/Library
+ */
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { Download, Trash2, ChevronDown, ChevronUp, Clock, DollarSign } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useTranslations } from 'next-intl';
 
 const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
 
+/**
+ * Represents a saved animation item in the library.
+ */
 interface LibraryItem {
+  /** The URL where the animation data is stored */
   url: string;
+  /** The pathname of the stored file */
   pathname: string;
+  /** ISO timestamp when the animation was created */
   createdAt: string;
+  /** Size of the stored file in bytes */
   size: number;
 }
 
+/**
+ * Represents the stored animation data with metadata.
+ */
 interface StoredData {
+  /** The Lottie animation JSON data */
   lottie_json: Record<string, unknown>;
+  /** Metadata about the animation generation */
   metadata: {
+    /** The prompt used to generate the animation */
     prompt: string;
+    /** The generation mode (text, image-text, video) */
     mode: string;
+    /** Duration of generation in seconds */
     duration_sec: number;
+    /** GPU cost in USD */
     gpu_cost_usd: number;
+    /** Number of layers in the animation */
     layers: number;
+    /** Animation width in pixels */
     width: number;
+    /** Animation height in pixels */
     height: number;
   };
 }
 
+/**
+ * Component for displaying and managing a library of saved Lottie animations.
+ * Provides a collapsible grid view with preview, download, and delete functionality.
+ * 
+ * @returns A React component that displays the animation library, or null if empty/loading
+ * 
+ * @example
+ * ```tsx
+ * <Library />
+ * ```
+ */
 export default function Library() {
+  const t = useTranslations('library');
   const [items, setItems] = useState<LibraryItem[]>([]);
   const [expanded, setExpanded] = useState(true);
   const [loading, setLoading] = useState(true);
   const [loadedData, setLoadedData] = useState<Record<string, StoredData>>({});
 
+  /**
+   * Fetches the list of saved animations from the API.
+   */
   const fetchLibrary = useCallback(async () => {
     try {
       const res = await fetch("/api/library");
@@ -48,6 +89,11 @@ export default function Library() {
     fetchLibrary();
   }, [fetchLibrary]);
 
+  /**
+   * Loads animation data for a specific item by URL.
+   * @param url - The URL of the animation data to load
+   * @returns The loaded data or null if loading fails
+   */
   const loadItem = useCallback(async (url: string) => {
     if (loadedData[url]) return loadedData[url];
     try {
@@ -60,11 +106,14 @@ export default function Library() {
     }
   }, [loadedData]);
 
-  // Load all items on mount
   useEffect(() => {
     items.forEach((item) => loadItem(item.url));
   }, [items, loadItem]);
 
+  /**
+   * Deletes an animation from the library.
+   * @param url - The URL of the animation to delete
+   */
   const handleDelete = async (url: string) => {
     try {
       await fetch(`/api/library?url=${encodeURIComponent(url)}`, {
@@ -81,6 +130,11 @@ export default function Library() {
     }
   };
 
+  /**
+   * Downloads an animation as a JSON file.
+   * @param data - The animation data to download
+   * @param prompt - The prompt used for the filename
+   */
   const handleDownload = (data: StoredData, prompt: string) => {
     const blob = new Blob([JSON.stringify(data.lottie_json, null, 2)], {
       type: "application/json",
@@ -103,7 +157,7 @@ export default function Library() {
         className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-2 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">Library</span>
+          <span className="text-sm font-medium">{t('title')}</span>
           <span className="text-[10px] text-muted bg-surface-2 px-1.5 py-0.5 rounded-full">
             {items.length}
           </span>
@@ -127,7 +181,6 @@ export default function Library() {
                   key={item.url}
                   className="group bg-background rounded-lg border border-border overflow-hidden hover:border-accent/30 transition-colors"
                 >
-                  {/* Preview */}
                   <div className="aspect-square bg-surface-2 flex items-center justify-center p-2">
                     {data ? (
                       <Lottie
@@ -141,10 +194,9 @@ export default function Library() {
                     )}
                   </div>
 
-                  {/* Info */}
                   <div className="p-2">
                     <p className="text-[10px] text-foreground truncate" title={meta?.prompt}>
-                      {meta?.prompt || "Untitled"}
+                      {meta?.prompt || t('unnamed')}
                     </p>
                     <div className="flex items-center gap-2 mt-1 text-[9px] text-muted/60">
                       {meta?.duration_sec ? (
@@ -162,7 +214,6 @@ export default function Library() {
                       <span>{meta?.layers || 0}L</span>
                     </div>
 
-                    {/* Actions */}
                     <div className="flex gap-1 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                       {data && (
                         <button
@@ -178,6 +229,7 @@ export default function Library() {
                       <button
                         onClick={() => handleDelete(item.url)}
                         className="flex items-center justify-center px-1.5 py-1 rounded bg-surface-2 hover:bg-red-500/20 text-muted hover:text-red-400 transition-colors"
+                        aria-label={`Delete ${meta?.prompt || 'animation'}`}
                       >
                         <Trash2 size={10} />
                       </button>

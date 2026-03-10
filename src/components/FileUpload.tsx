@@ -1,25 +1,63 @@
+/**
+ * @fileoverview File upload component for images and videos.
+ * Provides drag-and-drop and click-to-browse functionality with preview.
+ * @module components/FileUpload
+ */
+
 "use client";
 
 import { useCallback, useState, useRef } from "react";
-import { Upload, X, Image as ImageIcon, Film } from "lucide-react";
+import { X, Image as ImageIcon, Film } from "lucide-react";
+import { useTranslations } from 'next-intl';
 
+/**
+ * Props for the FileUpload component.
+ */
 interface FileUploadProps {
+  /** Accepted file types (MIME types) */
   accept: string;
+  /** Type of file being uploaded - affects preview rendering */
   type: "image" | "video";
+  /** Currently selected file, or null if none */
   file: File | null;
+  /** Callback when file selection changes */
   onFileChange: (file: File | null) => void;
 }
 
+/**
+ * Component for uploading image or video files with drag-and-drop support.
+ * Shows a preview of the selected file and allows clearing the selection.
+ * 
+ * @param props - The component props
+ * @returns A React component for file upload with preview
+ * 
+ * @example
+ * ```tsx
+ * const [file, setFile] = useState<File | null>(null);
+ * 
+ * <FileUpload
+ *   accept="image/png,image/jpeg"
+ *   type="image"
+ *   file={file}
+ *   onFileChange={setFile}
+ * />
+ * ```
+ */
 export default function FileUpload({
   accept,
   type,
   file,
   onFileChange,
 }: FileUploadProps) {
+  const t = useTranslations(type === "image" ? "image" : "video");
   const [isDragging, setIsDragging] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  /**
+   * Processes a selected file and generates a preview.
+   * @param f - The file to process
+   */
   const handleFile = useCallback(
     (f: File) => {
       onFileChange(f);
@@ -34,6 +72,10 @@ export default function FileUpload({
     [onFileChange, type]
   );
 
+  /**
+   * Handles file drop from drag-and-drop operation.
+   * @param e - The drag event
+   */
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
@@ -44,6 +86,9 @@ export default function FileUpload({
     [handleFile]
   );
 
+  /**
+   * Clears the current file selection and preview.
+   */
   const handleClear = () => {
     onFileChange(null);
     setPreview(null);
@@ -67,6 +112,7 @@ export default function FileUpload({
       {file && preview ? (
         <div className="relative">
           {type === "image" ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={preview}
               alt="Upload preview"
@@ -85,6 +131,7 @@ export default function FileUpload({
           <button
             onClick={handleClear}
             className="absolute top-2 right-2 p-1 rounded-full bg-background/80 hover:bg-background text-muted hover:text-foreground transition-colors"
+            aria-label="Clear"
           >
             <X size={14} />
           </button>
@@ -99,13 +146,11 @@ export default function FileUpload({
           </div>
           <div className="text-center">
             <p className="text-xs text-foreground">
-              Drop {type} here or{" "}
-              <span className="text-accent">browse</span>
+              {t('dragDrop')}{" "}
+              <span className="text-accent">{t('clickBrowse')}</span>
             </p>
             <p className="text-[10px] text-muted mt-0.5">
-              {type === "image"
-                ? "PNG, JPG, WebP up to 10MB"
-                : "MP4, WebM up to 50MB"}
+              {type === "image" ? t('supportedFormats') : t('supportedFormatsVideo')}
             </p>
           </div>
           <input

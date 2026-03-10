@@ -1,22 +1,47 @@
+/**
+ * @fileoverview Parameter controls for Lottie animation generation.
+ * Provides UI controls for adjusting generation parameters like temperature, top-p, etc.
+ * @module components/ParameterControls
+ */
+
 "use client";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
+import { useTranslations } from 'next-intl';
 
+/**
+ * Parameters for controlling Lottie animation generation.
+ */
 export interface GenerationParams {
+  /** Sampling temperature (0-2). Higher values produce more creative outputs. */
   temperature: number;
+  /** Nucleus sampling threshold (0-1). */
   top_p: number;
+  /** Limits token selection to top k highest probabilities. */
   top_k: number;
+  /** Penalty for repeated tokens. 1.0 means no penalty. */
   repetition_penalty: number;
+  /** Number of candidates to generate and select best from. */
   num_candidates: number;
+  /** Maximum sequence length for generation. */
   maxlen: number;
 }
 
+/**
+ * Props for the ParameterControls component.
+ */
 interface ParameterControlsProps {
+  /** Current parameter values */
   params: GenerationParams;
+  /** Callback when parameters change */
   onChange: (params: GenerationParams) => void;
 }
 
+/**
+ * Default generation parameters.
+ * These values are used as initial state and for reset functionality.
+ */
 export const DEFAULT_PARAMS: GenerationParams = {
   temperature: 0.9,
   top_p: 0.25,
@@ -26,12 +51,35 @@ export const DEFAULT_PARAMS: GenerationParams = {
   maxlen: 5556,
 };
 
+/**
+ * Component for adjusting Lottie generation parameters.
+ * Provides a collapsible panel with sliders for each parameter.
+ * 
+ * @param props - The component props
+ * @returns A React component with parameter adjustment controls
+ * 
+ * @example
+ * ```tsx
+ * const [params, setParams] = useState(DEFAULT_PARAMS);
+ * 
+ * <ParameterControls
+ *   params={params}
+ *   onChange={setParams}
+ * />
+ * ```
+ */
 export default function ParameterControls({
   params,
   onChange,
 }: ParameterControlsProps) {
+  const t = useTranslations('params');
   const [expanded, setExpanded] = useState(false);
 
+  /**
+   * Updates a single parameter value.
+   * @param key - The parameter key to update
+   * @param value - The new value for the parameter
+   */
   const update = (key: keyof GenerationParams, value: number) => {
     onChange({ ...params, [key]: value });
   };
@@ -43,7 +91,7 @@ export default function ParameterControls({
         className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-surface-2 transition-colors"
       >
         <span className="text-xs font-medium text-muted">
-          Generation Parameters
+          {t('title')}
         </span>
         {expanded ? (
           <ChevronUp size={14} className="text-muted" />
@@ -57,7 +105,7 @@ export default function ParameterControls({
           {/* Temperature */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-xs text-muted">Temperature</label>
+              <label className="text-xs text-muted">{t('temperature.label')}</label>
               <span className="text-xs font-mono text-foreground">
                 {params.temperature.toFixed(2)}
               </span>
@@ -72,17 +120,17 @@ export default function ParameterControls({
                 update("temperature", parseFloat(e.target.value))
               }
               className="w-full"
+              aria-label={t('temperature.label')}
             />
             <p className="text-[10px] text-muted/60 mt-0.5">
-              Controls randomness. Higher = more creative, lower = more
-              deterministic.
+              {t('temperature.help')}
             </p>
           </div>
 
           {/* Top-p */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-xs text-muted">Top-p</label>
+              <label className="text-xs text-muted">{t('topP.label')}</label>
               <span className="text-xs font-mono text-foreground">
                 {params.top_p.toFixed(2)}
               </span>
@@ -95,16 +143,17 @@ export default function ParameterControls({
               value={params.top_p}
               onChange={(e) => update("top_p", parseFloat(e.target.value))}
               className="w-full"
+              aria-label={t('topP.label')}
             />
             <p className="text-[10px] text-muted/60 mt-0.5">
-              Nucleus sampling threshold.
+              {t('topP.help')}
             </p>
           </div>
 
           {/* Top-k */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-xs text-muted">Top-k</label>
+              <label className="text-xs text-muted">{t('topK.label')}</label>
               <span className="text-xs font-mono text-foreground">
                 {params.top_k}
               </span>
@@ -117,16 +166,17 @@ export default function ParameterControls({
               value={params.top_k}
               onChange={(e) => update("top_k", parseInt(e.target.value))}
               className="w-full"
+              aria-label={t('topK.label')}
             />
             <p className="text-[10px] text-muted/60 mt-0.5">
-              Limits token selection to top-k most probable.
+              {t('topK.help')}
             </p>
           </div>
 
           {/* Repetition Penalty */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-xs text-muted">Repetition Penalty</label>
+              <label className="text-xs text-muted">{t('repetitionPenalty.label')}</label>
               <span className="text-xs font-mono text-foreground">
                 {params.repetition_penalty.toFixed(2)}
               </span>
@@ -141,9 +191,10 @@ export default function ParameterControls({
                 update("repetition_penalty", parseFloat(e.target.value))
               }
               className="w-full"
+              aria-label={t('repetitionPenalty.label')}
             />
             <p className="text-[10px] text-muted/60 mt-0.5">
-              Penalizes repeated tokens. 1.0 = no penalty.
+              {t('repetitionPenalty.help')}
             </p>
           </div>
 
@@ -151,7 +202,7 @@ export default function ParameterControls({
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="text-xs text-muted">
-                Candidates (Best-of-N)
+                {t('numCandidates.label')}
               </label>
               <span className="text-xs font-mono text-foreground">
                 {params.num_candidates}
@@ -169,15 +220,14 @@ export default function ParameterControls({
               className="w-full"
             />
             <p className="text-[10px] text-muted/60 mt-0.5">
-              Generate N candidates and select the best. Higher = better quality
-              but slower.
+              {t('numCandidates.help')}
             </p>
           </div>
 
           {/* Max Token Length */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-xs text-muted">Max Token Length</label>
+              <label className="text-xs text-muted">{t('maxLen.label')}</label>
               <span className="text-xs font-mono text-foreground">
                 {params.maxlen}
               </span>
@@ -190,9 +240,10 @@ export default function ParameterControls({
               value={params.maxlen}
               onChange={(e) => update("maxlen", parseInt(e.target.value))}
               className="w-full"
+              aria-label={t('maxLen.label')}
             />
             <p className="text-[10px] text-muted/60 mt-0.5">
-              Maximum sequence length for the generated Lottie tokens.
+              {t('maxLen.help')}
             </p>
           </div>
 
@@ -201,7 +252,7 @@ export default function ParameterControls({
             onClick={() => onChange(DEFAULT_PARAMS)}
             className="text-xs text-accent hover:text-accent-hover transition-colors"
           >
-            Reset to defaults
+            {t('reset')}
           </button>
         </div>
       )}

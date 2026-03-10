@@ -1,6 +1,13 @@
+/**
+ * @fileoverview Main playground component for Lottie animation generation.
+ * Provides the primary UI for text-to-animation, image-to-animation, and video-to-animation modes.
+ * @module components/Playground
+ */
+
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import { useTranslations, useLocale } from "next-intl";
 import { Type, ImagePlus, Video, Sparkles, Wand2, Zap, ZapOff, Clock, DollarSign, Link } from "lucide-react";
 import LottiePreview from "./LottiePreview";
 import FileUpload from "./FileUpload";
@@ -8,69 +15,130 @@ import ParameterControls, {
   GenerationParams,
   DEFAULT_PARAMS,
 } from "./ParameterControls";
+import LanguageSwitcher from "./LanguageSwitcher";
+import { type Locale } from "@/i18n/config";
 
+/** Generation mode type */
 type Mode = "text" | "image-text" | "video";
-type Backend = "modal" | "huggingface";
+
+/** Backend service type */
+type Backend = "modal" | "huggingface" | "local";
+
+/** GPU status type */
 type GpuStatus = "checking" | "active" | "inactive";
 
-const MODES: { id: Mode; label: string; icon: typeof Type; description: string }[] = [
-  {
-    id: "text",
-    label: "Text to Lottie",
-    icon: Type,
-    description: "Generate animations from text descriptions",
-  },
-  {
-    id: "image-text",
-    label: "Image + Text to Lottie",
-    icon: ImagePlus,
-    description: "Guide animation with a reference image and prompt",
-  },
-  {
-    id: "video",
-    label: "Video to Lottie",
-    icon: Video,
-    description: "Convert video content into vector animations",
-  },
-];
-
-const EXAMPLE_PROMPTS: Record<Mode, string[]> = {
-  text: [
-    "A red heart beating with a gentle pulse animation",
-    "A loading spinner with rotating dots that fade in and out",
-    "A rocket launching upward with trailing flames",
-    "A waving hand emoji with smooth back-and-forth motion",
-    "A sun rising over mountains with rays extending outward",
-  ],
-  "image-text": [
-    "Animate this icon with a bouncing motion",
-    "Add a spinning rotation to this shape",
-    "Make this character wave hello",
-    "Add a glowing pulse effect to this logo",
-  ],
-  video: [],
-};
-
-// Estimate complexity from max tokens parameter
+/**
+ * Returns estimated generation time based on max token length.
+ * @param maxlen - Maximum token length for generation
+ * @returns Human-readable time estimate string
+ */
 function getTimeEstimate(maxlen: number): string {
   if (maxlen <= 3000) return "~30-60s";
   if (maxlen <= 5556) return "~2-4 min";
   return "~5-10 min";
 }
 
-function getComplexityLabel(maxlen: number): string {
-  if (maxlen <= 3000) return "Simple";
-  if (maxlen <= 5556) return "Medium";
-  return "Complex";
+/**
+ * Returns complexity label based on max token length.
+ * @param maxlen - Maximum token length for generation
+ * @param t - Translation function
+ * @returns Translated complexity label
+ */
+function getComplexityLabel(maxlen: number, t: (key: string) => string): string {
+  if (maxlen <= 3000) return t("complexity.simple");
+  if (maxlen <= 5556) return t("complexity.medium");
+  return t("complexity.complex");
 }
 
+/**
+ * Formats seconds into a human-readable timer string.
+ * @param seconds - Number of seconds
+ * @returns Formatted time string (e.g., "1:30" or "45s")
+ */
 function formatTimer(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return m > 0 ? `${m}:${s.toString().padStart(2, "0")}` : `${s}s`;
 }
 
+/**
+ * Main playground component for generating Lottie animations.
+ * Supports three generation modes: text, image-text, and video.
+ * Provides backend selection, parameter controls, and real-time preview.
+ * 
+ * @returns The playground React component
+ * 
+ * @example
+ * ```tsx
+ * // In a page component
+ * <Playground />
+ * ```
+ */
 export default function Playground() {
+  const t = useTranslations();
+  const currentLocale = useLocale() as Locale;
+  const [mounted, setMounted] = useState(false);
+  
+  /** Available generation modes with labels and icons */
+  const MODES: { id: Mode; label: string; icon: typeof Type; description: string }[] = [
+    {
+      id: "text",
+      label: t("modes.text.label"),
+      icon: Type,
+      description: t("modes.text.description"),
+    },
+    {
+      id: "image-text",
+      label: t("modes.image-text.label"),
+      icon: ImagePlus,
+      description: t("modes.image-text.description"),
+    },
+    {
+      id: "video",
+      label: t("modes.video.label"),
+      icon: Video,
+      description: t("modes.video.description"),
+    },
+  ];
+
+  /** Example prompts for each generation mode */
+  const EXAMPLE_PROMPTS: Record<Mode, string[]> = {
+    text: [
+      t("prompt.exampleText0"),
+      t("prompt.exampleText1"),
+      t("prompt.exampleText2"),
+      t("prompt.exampleText3"),
+      t("prompt.exampleText4"),
+    ],
+    "image-text": [
+      t("prompt.exampleImageText0"),
+      t("prompt.exampleImageText1"),
+      t("prompt.exampleImageText2"),
+      t("prompt.exampleImageText3"),
+    ],
+    video: [],
+  };
+
+  /**
+   * Handles locale change with URL state preservation.
+   * Saves current mode, backend, and prompt to URL params before reload.
+   * @param locale - The new locale to switch to
+   */
+  const handleLocaleChange = async (locale: Locale) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("mode", mode);
+    url.searchParams.set("backend", backend);
+    if (prompt) url.searchParams.set("prompt", prompt);
+    
+    await fetch("/api/locale", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ locale }),
+    });
+    
+    window.location.href = url.toString();
+  };
+  
   const [mode, setMode] = useState<Mode>("text");
   const [prompt, setPrompt] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -80,18 +148,40 @@ export default function Playground() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [animationData, setAnimationData] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [backend, setBackend] = useState<Backend>("modal");
+  const [backend, setBackend] = useState<Backend>("local");
   const [gpuStatus, setGpuStatus] = useState<GpuStatus>("checking");
 
-  // Timer
   const [elapsed, setElapsed] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Last generation stats
   const [lastDuration, setLastDuration] = useState<number | null>(null);
   const [lastCost, setLastCost] = useState<number | null>(null);
 
-  // Check GPU status on mount and periodically
+  /**
+   * Initialize component state from URL parameters on mount.
+   */
+  useEffect(() => {
+    setMounted(true);
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlMode = urlParams.get("mode");
+    const urlBackend = urlParams.get("backend");
+    const urlPrompt = urlParams.get("prompt");
+    
+    if (urlMode === "text" || urlMode === "image-text" || urlMode === "video") {
+      setMode(urlMode);
+    }
+    if (urlBackend === "modal" || urlBackend === "huggingface" || urlBackend === "local") {
+      setBackend(urlBackend);
+    }
+    if (urlPrompt) {
+      setPrompt(urlPrompt);
+    }
+  }, []);
+
+  /**
+   * Periodically check GPU status for Modal backend.
+   */
   useEffect(() => {
     const checkGpu = async () => {
       try {
@@ -108,7 +198,9 @@ export default function Playground() {
     return () => clearInterval(interval);
   }, []);
 
-  // Timer effect
+  /**
+   * Track elapsed time during generation.
+   */
   useEffect(() => {
     if (isGenerating) {
       setElapsed(0);
@@ -126,6 +218,10 @@ export default function Playground() {
     };
   }, [isGenerating]);
 
+  /**
+   * Checks if generation is possible based on current mode and inputs.
+   * @returns True if generation can proceed
+   */
   const canGenerate = useCallback(() => {
     switch (mode) {
       case "text":
@@ -137,6 +233,10 @@ export default function Playground() {
     }
   }, [mode, prompt, imageFile, imageUrl, videoFile]);
 
+  /**
+   * Handles the generation request to the API.
+   * Sends form data with mode, backend, files, and parameters.
+   */
   const handleGenerate = async () => {
     if (!canGenerate()) return;
     setIsGenerating(true);
@@ -178,7 +278,6 @@ export default function Playground() {
         setAnimationData(data.lottie_json);
         if (backend === "modal") setGpuStatus("active");
 
-        // Auto-save to library
         fetch("/api/library", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -201,12 +300,14 @@ export default function Playground() {
     }
   };
 
+  if (!mounted) {
+    return null;
+  }
+
   return (
     <div className="w-full max-w-6xl mx-auto">
-      {/* GPU Status + Backend selector */}
       <div className="flex items-center justify-between mb-4 px-1">
         <div className="flex items-center gap-3">
-          {/* GPU status indicator */}
           <div className="flex items-center gap-1.5">
             {gpuStatus === "active" ? (
               <Zap size={13} className="text-green-400" />
@@ -227,22 +328,21 @@ export default function Playground() {
                 }
               >
                 {gpuStatus === "active"
-                  ? "Active"
+                  ? t("status.running")
                   : gpuStatus === "checking"
-                  ? "Checking..."
-                  : "Standby"}
+                  ? t("status.checking")
+                  : t("status.inactive")}
               </span>
             </span>
           </div>
 
           {gpuStatus === "inactive" && backend === "modal" && (
             <span className="text-[10px] text-muted/60">
-              First request wakes GPU (~2 min cold start)
+              {t("status.firstRequest")}
             </span>
           )}
         </div>
 
-        {/* Backend toggle */}
         <div className="flex items-center gap-1 bg-surface rounded-lg p-0.5">
           <button
             onClick={() => setBackend("modal")}
@@ -252,7 +352,7 @@ export default function Playground() {
                 : "text-muted hover:text-foreground"
             }`}
           >
-            Modal GPU
+            {t("backend.modal")}
           </button>
           <button
             onClick={() => setBackend("huggingface")}
@@ -262,12 +362,23 @@ export default function Playground() {
                 : "text-muted hover:text-foreground"
             }`}
           >
-            HF Space (Free)
+            {t("backend.huggingface")}
+          </button>
+          <button
+            onClick={() => setBackend("local")}
+            className={`px-2.5 py-1 text-[10px] font-medium rounded-md transition-all ${
+              backend === "local"
+                ? "bg-surface-2 text-foreground"
+                : "text-muted hover:text-foreground"
+            }`}
+          >
+            {t("backend.local")}
           </button>
         </div>
+
+        <LanguageSwitcher currentLocale={currentLocale} onLocaleChange={handleLocaleChange} />
       </div>
 
-      {/* Mode tabs */}
       <div className="flex gap-1 p-1 bg-surface rounded-xl mb-6">
         {MODES.map((m) => {
           const Icon = m.icon;
@@ -289,9 +400,7 @@ export default function Playground() {
         })}
       </div>
 
-      {/* Main playground area */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Left: Input panel */}
         <div className="bg-surface rounded-xl border border-border overflow-hidden">
           <div className="px-4 py-3 border-b border-border">
             <h3 className="text-sm font-medium">
@@ -303,11 +412,10 @@ export default function Playground() {
           </div>
 
           <div className="p-4 space-y-4">
-            {/* Image upload for image-text mode */}
             {mode === "image-text" && (
               <div className="space-y-2">
                 <label className="text-xs font-medium text-muted block">
-                  Reference Image
+                  {t("image.label")}
                 </label>
                 <FileUpload
                   accept="image/png,image/jpeg,image/webp"
@@ -321,7 +429,7 @@ export default function Playground() {
                 {!imageFile && (
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-px bg-border" />
-                    <span className="text-[10px] text-muted/50">OR</span>
+                    <span className="text-[10px] text-muted/50">{t("common.or")}</span>
                     <div className="flex-1 h-px bg-border" />
                   </div>
                 )}
@@ -332,7 +440,7 @@ export default function Playground() {
                       type="url"
                       value={imageUrl}
                       onChange={(e) => setImageUrl(e.target.value)}
-                      placeholder="Paste image URL..."
+                      placeholder={t("image.urlPlaceholder")}
                       className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs placeholder:text-muted/40 focus:outline-none focus:border-accent transition-colors"
                     />
                   </div>
@@ -340,11 +448,10 @@ export default function Playground() {
               </div>
             )}
 
-            {/* Video upload for video mode */}
             {mode === "video" && (
               <div>
                 <label className="text-xs font-medium text-muted mb-2 block">
-                  Source Video
+                  {t("video.label")}
                 </label>
                 <FileUpload
                   accept="video/mp4,video/webm"
@@ -355,25 +462,24 @@ export default function Playground() {
               </div>
             )}
 
-            {/* Text prompt (always shown for text & image-text, hidden for video) */}
             {mode !== "video" && (
               <div>
-                <label className="text-xs font-medium text-muted mb-2 block">
-                  {mode === "text" ? "Describe your animation" : "Animation instructions (optional)"}
+                <label className="block text-xs font-medium text-muted mb-2">
+                  {mode === "text" ? t("prompt.label") : t("prompt.labelOptional")}
+                  <span className="text-accent ml-1">{t("prompt.suggestEnglish")}</span>
                 </label>
                 <textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder={
                     mode === "text"
-                      ? "A red heart beating with a gentle pulse animation..."
-                      : "Animate this with a bouncing motion..."
+                      ? t("prompt.placeholder")
+                      : t("prompt.placeholderImage")
                   }
                   rows={4}
                   className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm placeholder:text-muted/40 focus:outline-none focus:border-accent transition-colors resize-none"
                 />
 
-                {/* Example prompts */}
                 {EXAMPLE_PROMPTS[mode].length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {EXAMPLE_PROMPTS[mode].map((example, i) => (
@@ -392,19 +498,16 @@ export default function Playground() {
               </div>
             )}
 
-            {/* Parameters */}
             <ParameterControls params={params} onChange={setParams} />
 
-            {/* Time estimate */}
             <div className="flex items-center gap-2 text-[11px] text-muted/70">
               <Clock size={12} />
               <span>
-                Estimated: <span className="text-muted">{getTimeEstimate(params.maxlen)}</span>
-                {" "}({getComplexityLabel(params.maxlen)} — {params.maxlen} tokens)
+                {t("time.estimate")}: <span className="text-muted">{getTimeEstimate(params.maxlen)}</span>
+                {" "}({getComplexityLabel(params.maxlen, t)} — {params.maxlen} {t("time.tokens")})
               </span>
             </div>
 
-            {/* Generate button */}
             <button
               onClick={handleGenerate}
               disabled={!canGenerate() || isGenerating}
@@ -419,19 +522,18 @@ export default function Playground() {
                   <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                   <span>
                     {backend === "modal" && gpuStatus === "inactive" && elapsed < 10
-                      ? "Waking GPU..."
-                      : `Generating... ${formatTimer(elapsed)}`}
+                      ? t("actions.wakingGpu")
+                      : `${t("actions.generating")} ${formatTimer(elapsed)}`}
                   </span>
                 </>
               ) : (
                 <>
                   <Wand2 size={16} />
-                  Generate Animation
+                  {t("actions.generate")}
                 </>
               )}
             </button>
 
-            {/* Generation stats (after completion) */}
             {lastDuration != null && (
               <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-surface-2 border border-border text-[11px]">
                 <div className="flex items-center gap-3">
@@ -442,15 +544,14 @@ export default function Playground() {
                   {lastCost != null && backend === "modal" && (
                     <span className="flex items-center gap-1 text-muted">
                       <DollarSign size={11} />
-                      ${lastCost < 0.01 ? lastCost.toFixed(4) : lastCost.toFixed(3)} GPU cost
+                      ${lastCost < 0.01 ? lastCost.toFixed(4) : lastCost.toFixed(3)} {t("stats.gpuCost")}
                     </span>
                   )}
                 </div>
-                <span className="text-muted/50">A10G @ $1.10/hr</span>
+                <span className="text-muted/50">A10G @ $1.10/{t("stats.hour")}</span>
               </div>
             )}
 
-            {/* Error display */}
             {error && (
               <div className="px-3 py-2 rounded-lg text-xs bg-red-500/10 text-red-400 border border-red-500/20">
                 {error}
@@ -459,7 +560,6 @@ export default function Playground() {
           </div>
         </div>
 
-        {/* Right: Preview panel */}
         <div
           className={`bg-surface rounded-xl border border-border overflow-hidden ${
             isGenerating ? "generating" : ""
@@ -472,18 +572,12 @@ export default function Playground() {
         </div>
       </div>
 
-      {/* Technical details */}
       <div className="mt-6 px-4 py-3 bg-surface rounded-xl border border-border">
         <div className="flex items-start gap-3">
           <Sparkles size={14} className="text-accent mt-0.5 shrink-0" />
           <div className="text-xs text-muted leading-relaxed">
-            <strong className="text-foreground">How it works:</strong>{" "}
-            OmniLottie extends Qwen2.5-VL with a specialized Lottie tokenizer
-            that transforms JSON animation files into structured sequences of
-            commands and parameters — shapes, animation functions, and control
-            values. The model generates these parameterized Lottie tokens
-            autoregressively, which are then decoded back into valid Lottie JSON
-            for rendering as scalable vector animations.
+            <strong className="text-foreground">{t("howItWorks.title")}</strong>{" "}
+            {t("howItWorks.description")}
           </div>
         </div>
       </div>

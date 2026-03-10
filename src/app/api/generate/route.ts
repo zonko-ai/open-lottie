@@ -1,24 +1,66 @@
-import { NextRequest, NextResponse } from "next/server";
-
 /**
- * POST /api/generate
- *
- * Supports two backends:
- *   1. "modal" (default) — Self-hosted Modal GPU deployment
- *   2. "huggingface" — OmniLottie HuggingFace Space (free, quota-limited)
+ * @fileoverview API route for Lottie animation generation.
+ * Supports multiple backends: Modal GPU, HuggingFace Space, and local Gradio server.
+ * @module api/generate
  */
 
+import { NextRequest, NextResponse } from "next/server";
+
+/** Modal GPU deployment URL for Lottie generation */
 const MODAL_URL =
   "https://nkjain92--omnilottie-omnilottieservice-generate.modal.run";
+
+/** HuggingFace Space identifier for OmniLottie */
 const HF_SPACE = "OmniLottie/OmniLottie";
+
+/** Local Gradio server URL (configured via environment variable) */
+const LOCAL_URL = process.env.LOCAL_GRADIO_URL || "";
+
+/** Gemini API key for image description */
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+
+/** Gemini model for image description */
 const GEMINI_MODEL = "gemini-3.1-flash-lite-preview";
 
-// Track when Modal GPU was last used (in-memory, resets on server restart)
-// Modal scaledown_window is 300s, so GPU stays warm ~5min after last request
+/** Modal GPU scaledown window in milliseconds (5 minutes) */
 const MODAL_SCALEDOWN_MS = 5 * 60 * 1000;
+
+/** Timestamp of last Modal GPU request (in-memory, resets on server restart) */
 let lastModalRequestTime = 0;
 
+/**
+ * POST /api/generate — Generate a Lottie animation.
+ * 
+ * Supports three generation modes:
+ * - "text": Text-to-animation generation
+ * - "image-text": Image-to-animation with optional text description
+ * - "video": Video-to-animation generation
+ * 
+ * Supports three backends:
+ * - "modal": Self-hosted Modal GPU deployment (default)
+ * - "huggingface": OmniLottie HuggingFace Space (free, quota-limited)
+ * - "local": Local Gradio server for GPU generation
+ * 
+ * @param request - The incoming Next.js request with FormData
+ * @returns JSON response with lottie_json or error
+ * 
+ * @example
+ * // Request (FormData)
+ * mode: "text"
+ * prompt: "A bouncing ball"
+ * backend: "modal"
+ * temperature: 0.9
+ * top_p: 0.25
+ * top_k: 5
+ * maxlen: 5556
+ * 
+ * // Response
+ * {
+ *   "lottie_json": { ... },
+ *   "duration_sec": 45,
+ *   "gpu_cost_usd": 0.0138
+ * }
+ */
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -113,6 +155,23 @@ export async function POST(request: NextRequest) {
         top_k,
         maxlen
       );
+    } else if (backend === "local") {
+      if (!LOCAL_URL) {
+        return NextResponse.json(
+          { error: "Local backend is not configured" },
+          { status: 503 }
+        );
+      }
+      return await generateViaLocal(
+        mode,
+        finalPrompt,
+        image,
+        video,
+        temperature,
+        top_p,
+        top_k,
+        maxlen
+      );
     } else {
       return await generateViaHuggingFace(
         mode,
@@ -145,8 +204,13 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// --- Gemini image description ---
-
+/**
+ * Describes an image using Google Gemini API.
+ * Generates a concise description suitable for Lottie animation generation.
+ * 
+ * @param image - The image file to describe
+ * @returns A description string, or null if description fails
+ */
 async function describeImageWithGemini(image: File): Promise<string | null> {
   if (!GEMINI_API_KEY) {
     console.warn("GEMINI_API_KEY not set, skipping image description");
@@ -198,8 +262,20 @@ async function describeImageWithGemini(image: File): Promise<string | null> {
   }
 }
 
-// --- Modal backend ---
-
+/**
+ * Generates a Lottie animation using the Modal GPU backend.
+ * Converts images/videos to base64 and sends to the Modal deployment.
+ * 
+ * @param mode - Generation mode ("text", "image-text", or "video")
+ * @param prompt - Text prompt for generation
+ * @param image - Image file for image-text mode
+ * @param video - Video file for video mode
+ * @param temperature - Sampling temperature
+ * @param top_p - Nucleus sampling threshold
+ * @param top_k - Top-k sampling limit
+ * @param max_tokens - Maximum token length
+ * @returns JSON response with lottie_json and timing/cost info
+ */
 async function generateViaModal(
   mode: string,
   prompt: string | null,
@@ -262,8 +338,20 @@ async function generateViaModal(
   });
 }
 
-// --- HuggingFace Space backend ---
-
+/**
+ * Generates a Lottie animation using the HuggingFace Space backend.
+ * Uses the Gradio client to communicate with the OmniLottie Space.
+ * 
+ * @param mode - Generation mode ("text", "image-text", or "video")
+ * @param prompt - Text prompt for generation
+ * @param image - Image file for image-text mode
+ * @param video - Video file for video mode
+ * @param temperature - Sampling temperature
+ * @param top_p - Nucleus sampling threshold
+ * @param top_k - Top-k sampling limit
+ * @param maxlen - Maximum token length
+ * @returns JSON response with lottie_json or error
+ */
 async function generateViaHuggingFace(
   mode: string,
   prompt: string | null,
@@ -351,8 +439,158 @@ async function generateViaHuggingFace(
   );
 }
 
-// --- GPU status endpoint (no external calls — purely local tracking) ---
+/**
+ * Generates a Lottie animation using a local Gradio server.
+ * Extracts JSON from iframe HTML response for security (avoids file system access).
+ * 
+ * @param mode - Generation mode ("text", "image-text", or "video")
+ * @param prompt - Text prompt for generation
+ * @param image - Image file for image-text mode
+ * @param video - Video file for video mode
+ * @param temperature - Sampling temperature
+ * @param top_p - Nucleus sampling threshold
+ * @param top_k - Top-k sampling limit
+ * @param maxlen - Maximum token length
+ * @returns JSON response with lottie_json or error
+ */
+async function generateViaLocal(
+  mode: string,
+  prompt: string | null,
+  image: File | null,
+  video: File | null,
+  temperature: number,
+  top_p: number,
+  top_k: number,
+  maxlen: number
+) {
+  const { Client } = await import("@gradio/client");
+  const client = await Client.connect(LOCAL_URL);
 
+  let result;
+
+  if (mode === "text") {
+    result = await client.predict("/process_text_to_lottie", {
+      text_prompt: prompt,
+      max_tokens: maxlen,
+      use_sampling: true,
+      temperature,
+      top_p,
+      top_k,
+    });
+  } else if (mode === "image-text") {
+    const imageBuffer = await image!.arrayBuffer();
+    const imageBlob = new Blob([imageBuffer], { type: image!.type });
+    result = await client.predict("/process_image_to_lottie", {
+      image_file: imageBlob,
+      text_description: prompt || "",
+      max_tokens: maxlen,
+      use_sampling: true,
+      temperature,
+      top_p,
+      top_k,
+    });
+  } else {
+    const videoBuffer = await video!.arrayBuffer();
+    const videoBlob = new Blob([videoBuffer], { type: video!.type });
+    result = await client.predict("/process_video_to_lottie", {
+      video: videoBlob,
+      max_tokens: maxlen,
+      use_sampling: true,
+      temperature,
+      top_p,
+      top_k,
+    });
+  }
+
+  // Gradio returns { type: "data", data: [...] }
+  const gradioResult = result as unknown as { data: unknown[] };
+  const dataArray = gradioResult.data as unknown[];
+  
+  const iframeHtml = dataArray?.[0] as string | undefined;
+  const statusMsg = dataArray?.[1] as string | undefined;
+
+  if (
+    statusMsg &&
+    (statusMsg.includes("Error") || statusMsg.includes("error"))
+  ) {
+    return NextResponse.json({ error: statusMsg }, { status: 500 });
+  }
+
+  // Extract JSON from iframe HTML (secure method, no direct file system access)
+  if (iframeHtml) {
+    // Extract base64 content from <iframe src="data:text/html;base64,...">
+    const iframeMatch = iframeHtml.match(/src="data:text\/html;base64,([A-Za-z0-9+/=]+)"/);
+    if (iframeMatch) {
+      const htmlStr = Buffer.from(iframeMatch[1], "base64").toString("utf-8");
+      
+      // Extract JSON from JSON.parse('...') in the HTML
+      const parseStart = htmlStr.indexOf("JSON.parse('");
+      if (parseStart !== -1) {
+        const jsonStart = parseStart + "JSON.parse('".length;
+        // Find the matching closing brace
+        let depth = 0;
+        let jsonEnd = jsonStart;
+        let inString = false;
+        let escape = false;
+        
+        for (let i = jsonStart; i < htmlStr.length; i++) {
+          const char = htmlStr[i];
+          
+          if (escape) {
+            escape = false;
+            continue;
+          }
+          
+          if (char === '\\') {
+            escape = true;
+            continue;
+          }
+          
+          if (char === '"' && !inString) {
+            inString = true;
+          } else if (char === '"' && inString) {
+            inString = false;
+          } else if (!inString) {
+            if (char === '{') depth++;
+            else if (char === '}') {
+              depth--;
+              if (depth === 0) {
+                jsonEnd = i + 1;
+                break;
+              }
+            }
+          }
+        }
+        
+        const jsonStr = htmlStr.substring(jsonStart, jsonEnd);
+        try {
+          const lottieJson = JSON.parse(jsonStr);
+          console.log("✅ Successfully extracted JSON from HTML");
+          return NextResponse.json({ lottie_json: lottieJson });
+        } catch (e) {
+          console.error("Failed to parse JSON from HTML:", e);
+        }
+      }
+    }
+  }
+
+  return NextResponse.json(
+    { error: "Failed to extract Lottie JSON from response" },
+    { status: 500 }
+  );
+}
+
+/**
+ * GET /api/generate — Check Modal GPU status.
+ * Returns whether the GPU is currently active (warm) or inactive (cold).
+ * Uses in-memory tracking based on last request time.
+ * 
+ * @returns JSON response with status ("active" or "inactive")
+ * 
+ * @example
+ * // Response
+ * { "status": "active" }
+ */
 export async function GET() {
   const elapsed = Date.now() - lastModalRequestTime;
   const status = lastModalRequestTime > 0 && elapsed < MODAL_SCALEDOWN_MS

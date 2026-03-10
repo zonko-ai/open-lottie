@@ -1,10 +1,31 @@
+/**
+ * @fileoverview Home page component for the OpenLottie application.
+ * Renders the main layout with navigation, hero section, playground, and footer.
+ * @module app/page
+ */
+
 import Playground from "@/components/Playground";
 import Library from "@/components/Library";
+import { useTranslations } from 'next-intl';
 
+/**
+ * Home page component that serves as the main entry point for the application.
+ * Displays navigation, hero section with badge and title, the playground component,
+ * animation library, and footer with attribution.
+ * 
+ * @returns The home page React component
+ * 
+ * @example
+ * ```tsx
+ * // This is the default export for the Next.js page
+ * export default Home;
+ * ```
+ */
 export default function Home() {
+  const t = useTranslations();
+  
   return (
     <div className="min-h-screen bg-background">
-      {/* Navbar */}
       <nav className="border-b border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -33,7 +54,7 @@ export default function Home() {
               rel="noopener noreferrer"
               className="text-xs text-muted hover:text-foreground transition-colors"
             >
-              Paper
+              {t('nav.paper')}
             </a>
             <a
               href="https://github.com/OpenVGLab/OmniLottie"
@@ -41,7 +62,7 @@ export default function Home() {
               rel="noopener noreferrer"
               className="text-xs text-muted hover:text-foreground transition-colors"
             >
-              GitHub
+              {t('nav.github')}
             </a>
             <a
               href="https://huggingface.co/spaces/OmniLottie/OmniLottie"
@@ -49,29 +70,25 @@ export default function Home() {
               rel="noopener noreferrer"
               className="text-xs text-muted hover:text-foreground transition-colors"
             >
-              HuggingFace
+              {t('nav.huggingface')}
             </a>
           </div>
         </div>
       </nav>
 
-      {/* Hero */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-12 pb-8 text-center">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-[11px] font-medium mb-4">
-          CVPR 2026
+          {t('hero.badge')}
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">
-          Turn anything into{" "}
-          <span className="text-accent">vector animations</span>
+          {t('hero.title')}
+          <span className="text-accent">{t('hero.titleHighlight')}</span>
         </h1>
         <p className="text-muted text-sm max-w-lg mx-auto leading-relaxed">
-          Generate professional Lottie animations from text descriptions,
-          reference images, or video. Powered by OmniLottie — the first
-          multimodal vector animation generator.
+          {t('hero.description')}
         </p>
       </div>
 
-      {/* Playground */}
       <div className="px-4 sm:px-6 pb-16">
         <Playground />
         <div className="max-w-6xl mx-auto">
@@ -79,11 +96,10 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Footer */}
       <footer className="border-t border-border py-6">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
           <p className="text-xs text-muted">
-            Built on{" "}
+            {t('footer.poweredBy')}{" "}
             <a
               href="https://arxiv.org/abs/2603.02138"
               target="_blank"
@@ -92,10 +108,10 @@ export default function Home() {
             >
               OmniLottie
             </a>{" "}
-            by OpenVGLab
+            {t('footer.developedBy')}
           </p>
           <p className="text-xs text-muted/60">
-            Lottie is a trademark of LottieFiles. This is an independent project.
+            {t('footer.disclaimer')}
           </p>
         </div>
       </footer>

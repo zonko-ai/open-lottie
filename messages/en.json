@@ -1,0 +1,161 @@
+{
+  "nav": {
+    "paper": "Paper",
+    "github": "GitHub",
+    "huggingface": "HuggingFace"
+  },
+  "hero": {
+    "badge": "CVPR 2026",
+    "title": "Transform anything into ",
+    "titleHighlight": "vector animations",
+    "description": "Generate professional Lottie animations from text descriptions, reference images, or videos. Powered by OmniLottie — the first multimodal vector animation generator."
+  },
+  "footer": {
+    "poweredBy": "Powered by",
+    "developedBy": "developed by OpenVGLab",
+    "disclaimer": "Lottie is a trademark of LottieFiles. This is an independent project."
+  },
+  "modes": {
+    "text": {
+      "label": "Text to Animation",
+      "description": "Generate animation from text description"
+    },
+    "image-text": {
+      "label": "Image + Text to Animation",
+      "description": "Use reference image and prompt to guide animation generation"
+    },
+    "video": {
+      "label": "Video to Animation",
+      "description": "Convert video content to vector animation"
+    }
+  },
+  "backend": {
+    "modal": "Modal GPU",
+    "huggingface": "HF Space (Free)",
+    "local": "Local GPU"
+  },
+  "prompt": {
+    "label": "Describe your animation",
+    "labelOptional": "Animation instructions (optional)",
+    "placeholder": "a red heart beating with a gentle pulse animation...",
+    "placeholderImage": "add a bouncing animation to this...",
+    "suggestEnglish": "(English recommended for current version)",
+    "exampleText0": "a red heart beating with a gentle pulse animation",
+    "exampleText1": "a loading spinner with fading rotating dots",
+    "exampleText2": "a rocket launching upward with flame trail",
+    "exampleText3": "a waving hand emoji smoothly swaying back and forth",
+    "exampleText4": "a sun rising over mountains with rays extending outward",
+    "exampleImageText0": "add a bouncing animation to this icon",
+    "exampleImageText1": "add a spinning animation to this shape",
+    "exampleImageText2": "make this character wave hello",
+    "exampleImageText3": "add a glowing pulse effect to this logo"
+  },
+  "image": {
+    "label": "Reference Image",
+    "upload": "Click or drag to upload image",
+    "orPasteUrl": "Or paste image URL",
+    "urlPlaceholder": "Paste image URL...",
+    "dragDrop": "Drag and drop image here or",
+    "clickBrowse": "click to browse",
+    "supportedFormats": "PNG, JPG, WebP (max 10MB)"
+  },
+  "video": {
+    "label": "Video File",
+    "upload": "Click or drag to upload video",
+    "supportedFormats": "Supported: MP4, WebM, MOV (max 10MB)",
+    "dragDrop": "Drag and drop video here or",
+    "clickBrowse": "click to browse",
+    "supportedFormatsVideo": "MP4, WebM (max 50MB)"
+  },
+  "actions": {
+    "generate": "Generate Animation",
+    "generating": "Generating...",
+    "wakingGpu": "Waking up GPU...",
+    "download": "Download JSON",
+    "copy": "Copy JSON",
+    "copied": "Copied!",
+    "reset": "Reset"
+  },
+  "status": {
+    "running": "Running",
+    "checking": "Checking...",
+    "inactive": "Inactive",
+    "gpuActive": "GPU Active",
+    "gpuInactive": "GPU Inactive",
+    "firstRequest": "First request will wake up GPU (~2 min cold start)"
+  },
+  "errors": {
+    "generateFailed": "Generation failed",
+    "noPrompt": "Please enter a description",
+    "noImage": "Please upload an image",
+    "noVideo": "Please upload a video"
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "zh-CN": "简体中文",
+    "zh-TW": "繁體中文"
+  },
+  "common": {
+    "or": "or"
+  },
+  "time": {
+    "estimate": "Estimated time",
+    "tokens": "tokens"
+  },
+  "complexity": {
+    "simple": "Simple",
+    "medium": "Medium",
+    "complex": "Complex"
+  },
+  "stats": {
+    "gpuCost": "GPU cost",
+    "hour": "hour"
+  },
+  "howItWorks": {
+    "title": "How it works:",
+    "description": "OmniLottie extends Qwen2.5-VL with a specialized Lottie tokenizer that converts JSON animation files into structured sequences of commands and parameters — shapes, animation functions, and control values. The model generates these parameterized Lottie tokens autoregressively, which are then decoded back into valid Lottie JSON, rendered as scalable vector animations."
+  },
+  "preview": {
+    "title": "Preview",
+    "playPause": "Play/Pause",
+    "restart": "Restart",
+    "copyJson": "Copy JSON",
+    "downloadJson": "Download JSON",
+    "generating": "Generating animation...",
+    "noAnimation": "No animation",
+    "selectMode": "Select a mode and generate animation"
+  },
+  "library": {
+    "title": "Library",
+    "unnamed": "Unnamed"
+  },
+  "params": {
+    "title": "Generation Parameters",
+    "temperature": {
+      "label": "Temperature",
+      "help": "Controls randomness. Higher values are more creative, lower values are more deterministic."
+    },
+    "topP": {
+      "label": "Top-p",
+      "help": "Nucleus sampling threshold."
+    },
+    "topK": {
+      "label": "Top-k",
+      "help": "Limits token selection to the top k highest probabilities."
+    },
+    "repetitionPenalty": {
+      "label": "Repetition Penalty",
+      "help": "Penalizes repeated tokens. 1.0 means no penalty."
+    },
+    "numCandidates": {
+      "label": "Candidates (Best-of-N)",
+      "help": "Generate N candidates and select the best. Higher values improve quality but slow down."
+    },
+    "maxLen": {
+      "label": "Max Token Length",
+      "help": "Maximum sequence length for Lottie token generation."
+    },
+    "reset": "Reset to defaults"
+  }
+}
